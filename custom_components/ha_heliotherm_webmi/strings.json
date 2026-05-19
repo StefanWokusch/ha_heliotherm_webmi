@@ -230,7 +230,7 @@
         "name": "Mischer2 Betrieb"
       },
       "eqa02_istwert": {
-        "name": "EQA02 Istwert"
+        "name": "EQ Luefter Istwert"
       },
       "fehlerlog": {
         "name": "Fehlerlog"

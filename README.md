@@ -67,6 +67,10 @@ The Home Assistant diagnostics download performs a separate on-demand crawl of
 the visible WebMI SVG pages and reads all discovered addresses. This is intended
 for investigation snapshots, not normal polling.
 
+`EQ Luefter Istwert` uses the live WebMI value `webregler/mp/248/value`. Nearby
+EQA02 `sp/*` values such as `SP3327=40%` are configuration parameters from the
+same controller page, not the current fan output.
+
 ## Calculated setpoints
 
 The controller WebMI read API does not expose the current calculated `Ruecklauf
