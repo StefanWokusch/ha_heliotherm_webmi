@@ -51,10 +51,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for configured_entry in hass.config_entries.async_entries(DOMAIN)
         if _entry_base_url(configured_entry) == api.base_url
     ]
-    primary_entry = min(equivalent_entries, key=lambda item: item.created_at)
-    if entry.entry_id != primary_entry.entry_id:
-        _LOGGER.error("Duplicate Heliotherm WebMI entry for %s", api.base_url)
-        return False
+    if equivalent_entries:
+        primary_entry = min(equivalent_entries, key=_entry_sort_key)
+        if entry.entry_id != primary_entry.entry_id:
+            _LOGGER.error(
+                "Duplicate Heliotherm WebMI entry %s for %s; keeping primary entry %s",
+                entry.entry_id,
+                api.base_url,
+                primary_entry.entry_id,
+            )
+            return False
 
     coordinator = HeliothermWebMICoordinator(
         hass,
@@ -108,3 +114,11 @@ def _entry_base_url(entry: ConfigEntry) -> str | None:
         )
     except (KeyError, TypeError, ValueError):
         return None
+
+
+def _entry_sort_key(entry: ConfigEntry) -> tuple[float, str]:
+    """Return a stable order key for equivalent entries."""
+    created_at = getattr(entry, "created_at", None)
+    if created_at is None:
+        created_at = float("inf")
+    return (float(created_at), entry.entry_id)
