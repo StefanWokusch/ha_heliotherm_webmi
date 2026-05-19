@@ -128,8 +128,8 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         translation_key="mischer_sollpos",
         address="webregler/sp/3220/value",
         native_unit_of_measurement=UnitOfTime.SECONDS,
-        state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(

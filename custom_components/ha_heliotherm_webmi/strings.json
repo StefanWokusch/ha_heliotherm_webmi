@@ -35,7 +35,7 @@
       "hkr_heizgrenze": { "name": "HKR Heizgrenze" },
       "hkpa01_istwert": { "name": "HKPA01 Istwert" },
       "mischer_betrieb": { "name": "Mischer Betrieb" },
-      "mischer_sollpos": { "name": "Mischer Sollposition" },
+      "mischer_sollpos": { "name": "Mischer Sollposition Zeit" },
       "vortex_flow_1": { "name": "Vortex Flow 1" },
       "vortex_flow_2": { "name": "Vortex Flow 2" },
       "heizkreispumpe_modus": { "name": "Heizkreispumpe Modus" },
