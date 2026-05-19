@@ -14,8 +14,11 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import HeliothermWebMIClient
 from .const import (
     CONF_SCAN_INTERVAL,
+    CONF_USE_SUBSCRIPTIONS,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SUBSCRIPTION_FALLBACK_INTERVAL,
+    DEFAULT_USE_SUBSCRIPTIONS,
     DOMAIN,
     MIN_SCAN_INTERVAL,
     PLATFORMS,
@@ -40,6 +43,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     host = entry.data[CONF_HOST]
     port = int(entry.data.get(CONF_PORT, DEFAULT_PORT))
     scan_interval = _scan_interval(entry)
+    use_subscriptions = _use_subscriptions(entry)
+    update_interval = scan_interval
+    if use_subscriptions:
+        update_interval = max(scan_interval, DEFAULT_SUBSCRIPTION_FALLBACK_INTERVAL)
 
     api = HeliothermWebMIClient(
         async_get_clientsession(hass),
@@ -65,7 +72,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = HeliothermWebMICoordinator(
         hass,
         api=api,
-        update_interval=timedelta(seconds=scan_interval),
+        update_interval=timedelta(seconds=update_interval),
+        use_subscriptions=use_subscriptions,
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -76,6 +84,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    coordinator.async_start_subscription()
     return True
 
 
@@ -84,6 +93,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         runtime = hass.data[DOMAIN].pop(entry.entry_id)
+        await runtime.coordinator.async_stop_subscription()
         runtime.api.reset_session()
     return unload_ok
 
@@ -103,6 +113,14 @@ def _scan_interval(entry: ConfigEntry) -> int:
     except (TypeError, ValueError):
         seconds = DEFAULT_SCAN_INTERVAL
     return max(seconds, MIN_SCAN_INTERVAL)
+
+
+def _use_subscriptions(entry: ConfigEntry) -> bool:
+    value = entry.options.get(
+        CONF_USE_SUBSCRIPTIONS,
+        entry.data.get(CONF_USE_SUBSCRIPTIONS, DEFAULT_USE_SUBSCRIPTIONS),
+    )
+    return bool(value)
 
 
 def _entry_base_url(entry: ConfigEntry) -> str | None:

@@ -15,9 +15,11 @@ import voluptuous as vol
 from .api import HeliothermWebMIClient, WebMIError
 from .const import (
     CONF_SCAN_INTERVAL,
+    CONF_USE_SUBSCRIPTIONS,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_USE_SUBSCRIPTIONS,
     DOMAIN,
     MIN_SCAN_INTERVAL,
 )
@@ -73,6 +75,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_SCAN_INTERVAL,
                         default=DEFAULT_SCAN_INTERVAL,
                     ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL)),
+                    vol.Required(
+                        CONF_USE_SUBSCRIPTIONS,
+                        default=DEFAULT_USE_SUBSCRIPTIONS,
+                    ): cv.boolean,
                 }
             ),
             errors=errors,
@@ -130,6 +136,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             ),
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL)),
+                    vol.Required(
+                        CONF_USE_SUBSCRIPTIONS,
+                        default=self.config_entry.options.get(
+                            CONF_USE_SUBSCRIPTIONS,
+                            self.config_entry.data.get(
+                                CONF_USE_SUBSCRIPTIONS,
+                                DEFAULT_USE_SUBSCRIPTIONS,
+                            ),
+                        ),
+                    ): cv.boolean,
                 }
             ),
         )

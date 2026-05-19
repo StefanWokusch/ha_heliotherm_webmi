@@ -8,7 +8,8 @@
           "name": "Name",
           "host": "Host",
           "port": "Port",
-          "scan_interval": "Polling interval in seconds"
+          "scan_interval": "Fallback polling interval in seconds",
+          "use_subscriptions": "Use WebMI live updates"
         }
       }
     },
@@ -24,7 +25,8 @@
       "init": {
         "title": "Heliotherm WebMI options",
         "data": {
-          "scan_interval": "Polling interval in seconds"
+          "scan_interval": "Fallback polling interval in seconds",
+          "use_subscriptions": "Use WebMI live updates"
         }
       }
     }

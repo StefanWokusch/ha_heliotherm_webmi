@@ -22,7 +22,8 @@ behavior is understood better.
 
 ## Current scope
 
-- Local polling via HTTP `POST /webMI/?read`
+- Live local updates via WebMI `subscribedata` + `publish`
+- Fallback polling via HTTP `POST /webMI/?read`
 - Anonymous WebMI session creation
 - Small default-enabled sensor set for normal observation
 - Curated diagnostic sensors and binary sensors
@@ -50,10 +51,20 @@ Use the controller IP or hostname, for example `192.168.0.131`.
 
 ## Data updates
 
-The integration polls enabled entities every `60` seconds by default. It uses a
-single coordinator and batches WebMI addresses into one read request per update.
-Entities that are disabled in Home Assistant are not polled during normal
-updates.
+The integration uses WebMI live updates by default. It creates a read-only
+WebMI session, subscribes only the addresses required by enabled Home Assistant
+entities, and waits for value changes through WebMI `publish` long-poll. This
+is the live-update mechanism used by the WebMI API on this controller; direct
+WebSocket support was probed but is not active on the current installation.
+
+The existing batched `read` path remains as a fallback. With live updates
+enabled, the configured polling interval is treated as the fallback full-read
+interval and is clamped to at least `300` seconds. If live updates are disabled
+in the integration options, the integration behaves as a normal polling
+integration and uses the configured polling interval directly.
+
+Entities that are disabled in Home Assistant are not subscribed or polled during
+normal updates.
 
 The default-enabled entity set is intentionally focused on normal observation:
 outside temperature, main flow/return/buffer temperatures, Mischer1 flow

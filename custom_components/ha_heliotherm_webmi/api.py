@@ -23,6 +23,10 @@ class WebMIError(Exception):
     """Base exception for WebMI errors."""
 
 
+class WebMITimeout(WebMIError):
+    """Raised when a WebMI request times out."""
+
+
 @dataclass(frozen=True)
 class WebMIReadResult:
     """One WebMI read result."""
@@ -49,6 +53,14 @@ class WebMIReadResult:
     def as_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation."""
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class WebMISubscriptionEvent:
+    """One WebMI subscribedata publish event."""
+
+    address: str
+    result: WebMIReadResult
 
 
 class HeliothermWebMIClient:
@@ -110,6 +122,109 @@ class HeliothermWebMIClient:
             address: WebMIReadResult.from_payload(item)
             for address, item in zip(unique_addresses, result_items, strict=False)
         }
+
+    async def create_subscription(self) -> str:
+        """Create a WebMI data subscription and return its id."""
+        await self._ensure_session()
+        response = await self._post_json(
+            "createsubscription",
+            data={"Persistent": "true"},
+            headers=self._x_webmi_header(),
+        )
+        subscription_id = response.get("subscriptionid")
+        if not subscription_id:
+            raise WebMIError(f"WebMI createsubscription failed: {response}")
+        return str(subscription_id)
+
+    async def subscribe_addresses(
+        self,
+        subscription_id: str,
+        addresses: Iterable[str],
+    ) -> None:
+        """Subscribe a WebMI subscription to addresses."""
+        unique_addresses = list(dict.fromkeys(addresses))
+        if not unique_addresses:
+            return
+
+        response = await self._post_json(
+            "subscribedata",
+            data=[("subscriptionid", subscription_id)]
+            + [("address[]", address) for address in unique_addresses],
+            headers=self._x_webmi_header(),
+        )
+        top_error = response.get("error")
+        if top_error not in (None, 0):
+            raise WebMIError(
+                "WebMI subscribedata returned top-level error "
+                f"{top_error}: {response.get('errorstring')}"
+            )
+        result_items = response.get("result")
+        if not isinstance(result_items, list) or len(result_items) != len(unique_addresses):
+            result_count = len(result_items) if isinstance(result_items, list) else 0
+            raise WebMIError(
+                "WebMI subscribedata returned an incomplete result batch "
+                f"({result_count}/{len(unique_addresses)} values)"
+            )
+        errors = [
+            (address, item)
+            for address, item in zip(unique_addresses, result_items, strict=False)
+            if isinstance(item, dict) and item.get("error") not in (None, 0)
+        ]
+        if errors:
+            address, item = errors[0]
+            raise WebMIError(
+                "WebMI subscribedata failed for "
+                f"{address}: {item.get('error')} {item.get('errorstring')}"
+            )
+
+    async def publish_subscription(self, timeout: int = 65) -> list[WebMISubscriptionEvent]:
+        """Wait for subscribed WebMI value changes."""
+        await self._ensure_session()
+        response = await self._post_json(
+            "publish",
+            data={"maxresults": "100"},
+            headers=self._x_webmi_header(),
+            timeout=ClientTimeout(total=timeout),
+        )
+        top_error = response.get("error")
+        if top_error not in (None, 0):
+            raise WebMIError(
+                "WebMI publish returned top-level error "
+                f"{top_error}: {response.get('errorstring')}"
+            )
+        result_items = response.get("result") or []
+        if not isinstance(result_items, list):
+            raise WebMIError("WebMI publish returned a non-list result")
+
+        events: list[WebMISubscriptionEvent] = []
+        for item in result_items:
+            if not isinstance(item, dict):
+                continue
+            address = item.get("address")
+            if not address:
+                continue
+            events.append(
+                WebMISubscriptionEvent(
+                    address=address,
+                    result=WebMIReadResult(
+                        value=item.get("value"),
+                        error=item.get("error", 0),
+                        errorstring=item.get("errorstring"),
+                        timestamp=item.get("timestamp"),
+                        status=item.get("status"),
+                    ),
+                )
+            )
+        return events
+
+    async def delete_subscription(self, subscription_id: str) -> None:
+        """Best-effort delete of a WebMI subscription."""
+        await self._ensure_session()
+        await self._post_json(
+            "deletesubscription",
+            data={"subscriptionid": subscription_id},
+            headers=self._x_webmi_header(),
+        )
 
     async def _read_addresses_once(self, addresses: list[str]) -> dict[str, Any]:
         """Read addresses once with the current or a newly created session."""
@@ -217,6 +332,7 @@ class HeliothermWebMIClient:
         command: str,
         data: Any | None = None,
         headers: dict[str, str] | None = None,
+        timeout: ClientTimeout | None = None,
     ) -> dict[str, Any]:
         url = f"{self._base_url}/webMI/?{command}"
         try:
@@ -224,11 +340,13 @@ class HeliothermWebMIClient:
                 url,
                 data=data,
                 headers=headers,
-                timeout=self._timeout,
+                timeout=timeout or self._timeout,
             ) as response:
                 response.raise_for_status()
                 return await response.json(content_type=None)
-        except (ClientError, TimeoutError, json.JSONDecodeError) as err:
+        except TimeoutError as err:
+            raise WebMITimeout(f"WebMI POST {command} timed out") from err
+        except (ClientError, json.JSONDecodeError) as err:
             raise WebMIError(f"WebMI POST {command} failed: {err}") from err
 
     async def _get_text(self, path: str) -> str:
