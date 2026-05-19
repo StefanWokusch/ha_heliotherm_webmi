@@ -20,6 +20,8 @@ from homeassistant.const import (
     UnitOfTime,
 )
 
+from .generated_points import GENERATED_SENSOR_POINTS
+
 
 def raw_value(value: Any) -> Any:
     """Return a value unchanged."""
@@ -86,6 +88,22 @@ class WebMIBinarySensorEntityDescription(BinarySensorEntityDescription):
     on_values: frozenset[Any] = frozenset({1, "1", True, "true", "on", "Ein"})
 
 
+def generated_native_unit(unit: str | None) -> str | None:
+    """Map generated catalogue unit keys to Home Assistant units."""
+    return {
+        "bar": "bar",
+        "celsius": UnitOfTemperature.CELSIUS,
+        "percent": PERCENTAGE,
+    }.get(unit)
+
+
+def generated_device_class(unit: str | None) -> SensorDeviceClass | None:
+    """Return a device class only for generated points with reliable units."""
+    if unit == "celsius":
+        return SensorDeviceClass.TEMPERATURE
+    return None
+
+
 SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
     WebMISensorEntityDescription(
         key="mischer1_heizgrenze",
@@ -94,6 +112,7 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -103,6 +122,7 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -112,6 +132,7 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -139,6 +160,7 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement="l/min",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -148,6 +170,7 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement="l/min",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -210,12 +233,14 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
         translation_key="fu_soll_extern",
         address="webregler/sp/3452/value",
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     WebMIBinarySensorEntityDescription(
         key="heizkreispumpe_service_ein",
         translation_key="heizkreispumpe_service_ein",
         address="webregler/mp/222/value",
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     WebMIBinarySensorEntityDescription(
         key="heizkreispumpe_ext_anf_abhaengig",
@@ -246,6 +271,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -286,6 +312,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -296,6 +323,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -306,6 +334,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -316,6 +345,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -326,6 +356,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -336,6 +367,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -346,6 +378,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -356,6 +389,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -366,6 +400,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -376,6 +411,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -386,6 +422,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -396,6 +433,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -416,6 +454,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -426,6 +465,7 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -436,11 +476,31 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
 )
 
-SENSOR_DESCRIPTIONS = SENSOR_DESCRIPTIONS + TEMPERATURE_SENSOR_DESCRIPTIONS
+GENERATED_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = tuple(
+    WebMISensorEntityDescription(
+        key=point["key"],
+        name=point["name"],
+        address=point["address"],
+        native_unit_of_measurement=generated_native_unit(point["unit"]),
+        device_class=generated_device_class(point["unit"]),
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=raw_value,
+    )
+    for point in GENERATED_SENSOR_POINTS
+)
+
+
+SENSOR_DESCRIPTIONS = (
+    SENSOR_DESCRIPTIONS
+    + TEMPERATURE_SENSOR_DESCRIPTIONS
+    + GENERATED_SENSOR_DESCRIPTIONS
+)
 
 
 ALL_DESCRIPTIONS = SENSOR_DESCRIPTIONS + BINARY_SENSOR_DESCRIPTIONS

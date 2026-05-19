@@ -24,7 +24,9 @@ behavior is understood better.
 
 - Local polling via HTTP `POST /webMI/?read`
 - Anonymous WebMI session creation
+- Small default-enabled sensor set for normal observation
 - Curated diagnostic sensors and binary sensors
+- Generated disabled-by-default catalogue for all known successful WebMI reads
 - Home Assistant diagnostics download with an on-demand full WebMI snapshot
 - No Modbus dependency
 - No write/control support
@@ -49,6 +51,12 @@ The integration polls enabled entities every `60` seconds by default. It uses a
 single coordinator and batches WebMI addresses into one read request per update.
 Entities that are disabled in Home Assistant are not polled during normal
 updates.
+
+The default-enabled entity set is intentionally small: outside temperature,
+main flow/return/buffer temperatures, Mischer1 flow temperature, and the
+observed mixer percentage. Deeper service, room, setting, counter, and unknown
+WebMI points are present in the entity registry but disabled by default. Enable
+individual diagnostics in Home Assistant only when you want them polled.
 
 The Home Assistant diagnostics download performs a separate on-demand crawl of
 the visible WebMI SVG pages and reads all discovered addresses. This is intended
