@@ -46,6 +46,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         host=host,
         port=port,
     )
+    if any(
+        runtime.api.base_url == api.base_url for runtime in hass.data[DOMAIN].values()
+    ):
+        _LOGGER.error("Duplicate Heliotherm WebMI entry for %s", api.base_url)
+        return False
+
     coordinator = HeliothermWebMICoordinator(
         hass,
         api=api,
@@ -87,4 +93,3 @@ def _scan_interval(entry: ConfigEntry) -> int:
     except (TypeError, ValueError):
         seconds = DEFAULT_SCAN_INTERVAL
     return max(seconds, MIN_SCAN_INTERVAL)
-

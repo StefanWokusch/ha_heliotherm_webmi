@@ -36,13 +36,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            await self.async_set_unique_id(user_input[CONF_HOST])
+            port = int(user_input[CONF_PORT])
+            unique_id = HeliothermWebMIClient._normalize_base_url(
+                user_input[CONF_HOST],
+                port,
+            )
+            if self._host_already_configured(unique_id):
+                return self.async_abort(reason="already_configured")
+
+            await self.async_set_unique_id(unique_id)
             self._abort_if_unique_id_configured()
 
             api = HeliothermWebMIClient(
                 async_get_clientsession(self.hass),
                 host=user_input[CONF_HOST],
-                port=int(user_input[CONF_PORT]),
+                port=port,
             )
             try:
                 await api.info()
@@ -69,6 +77,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             errors=errors,
         )
+
+    def _host_already_configured(self, normalized_base_url: str) -> bool:
+        """Return true if an equivalent WebMI host is already configured."""
+        for entry in self._async_current_entries():
+            try:
+                entry_base_url = HeliothermWebMIClient._normalize_base_url(
+                    entry.data[CONF_HOST],
+                    int(entry.data.get(CONF_PORT, DEFAULT_PORT)),
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+            if entry_base_url == normalized_base_url:
+                return True
+        return False
 
     @staticmethod
     @callback
@@ -111,4 +133,3 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 }
             ),
         )
-
