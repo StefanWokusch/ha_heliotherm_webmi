@@ -12,8 +12,13 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENT, UnitOfPower, UnitOfTemperature, UnitOfTime
-from homeassistant.helpers.entity import EntityCategory
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfPower,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 
 
 def raw_value(value: Any) -> Any:
@@ -104,7 +109,7 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         key="hkpa01_istwert",
         translation_key="hkpa01_istwert",
         address="webregler/mp/247/value",
-        native_unit_of_measurement=PERCENT,
+        native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
@@ -113,7 +118,7 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         key="mischer_betrieb",
         translation_key="mischer_betrieb",
         address="webregler/mp/268/value",
-        native_unit_of_measurement=PERCENT,
+        native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
@@ -123,7 +128,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         translation_key="mischer_sollpos",
         address="webregler/sp/3220/value",
         native_unit_of_measurement=UnitOfTime.SECONDS,
-        device_class=SensorDeviceClass.DURATION,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
@@ -225,4 +229,3 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
 
 ALL_DESCRIPTIONS = SENSOR_DESCRIPTIONS + BINARY_SENSOR_DESCRIPTIONS
 DESCRIPTIONS_BY_KEY = {description.key: description for description in ALL_DESCRIPTIONS}
-
