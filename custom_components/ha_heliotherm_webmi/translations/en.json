@@ -219,6 +219,9 @@
       },
       "evu_sperre_status": {
         "name": "EVU Sperre"
+      },
+      "heizstab_betrieb": {
+        "name": "Heizstab Betrieb"
       }
     },
     "binary_sensor": {

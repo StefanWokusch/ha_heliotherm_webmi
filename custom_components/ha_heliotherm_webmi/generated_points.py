@@ -1794,12 +1794,6 @@ GENERATED_SENSOR_POINTS: tuple[dict[str, str | None], ...] = (
         "unit": 'bar',
     },
     {
-        "key": "diag_mp_249",
-        "name": "Triac2Stufe Betrieb",
-        "address": "webregler/mp/249/value",
-        "unit": 'percent',
-    },
-    {
         "key": "diag_sp_3385",
         "name": "Triac2Stufe Istwert",
         "address": "webregler/sp/3385/value",

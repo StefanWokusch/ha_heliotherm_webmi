@@ -823,6 +823,15 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
+        key="heizstab_betrieb",
+        translation_key="heizstab_betrieb",
+        address="webregler/mp/249/value",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
         key="vdmod_status",
         translation_key="vdmod_status",
         address="webregler/mp/240/value",

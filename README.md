@@ -57,7 +57,7 @@ The default-enabled entity set is intentionally focused on normal observation:
 outside temperature, main flow/return/buffer temperatures, Mischer1 flow
 temperature, observed mixer percentage, current demand/mode/status, readable
 compressor/fault/lock/request states, current thermal/electrical power, COP, WMZ flow,
-and compressor request. Deeper service, room, setting, counter, actuator, and
+Heizstab operation, and compressor request. Deeper service, room, setting, counter, actuator, and
 unknown WebMI points are present in the entity registry but disabled by default.
 Enable individual diagnostics in Home Assistant only when you want them polled.
 
