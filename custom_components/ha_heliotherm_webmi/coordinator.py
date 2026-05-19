@@ -37,7 +37,11 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
     async def _async_update_data(self) -> dict[str, WebMIReadResult]:
         """Fetch enabled WebMI values."""
         descriptions = self._active_descriptions()
-        addresses = [description.address for description in descriptions]
+        addresses = [
+            description.address
+            for description in descriptions
+            if description.address is not None
+        ]
         try:
             values_by_address = await self.api.read_addresses(addresses)
         except WebMIError as err:
@@ -49,20 +53,29 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                 WebMIReadResult(error=-1, errorstring="Address was not returned"),
             )
             for description in descriptions
+            if description.address is not None
         }
 
     def _active_descriptions(self) -> Iterable:
         contexts = set(self.async_contexts())
         if contexts:
-            return [
-                DESCRIPTIONS_BY_KEY[key]
-                for key in sorted(contexts)
-                if key in DESCRIPTIONS_BY_KEY
-            ]
+            active_keys = {key for key in contexts if key in DESCRIPTIONS_BY_KEY}
+        else:
+            active_keys = {
+                description.key
+                for description in DESCRIPTIONS_BY_KEY.values()
+                if description.entity_registry_enabled_default
+            }
 
-        return [
-            description
-            for description in DESCRIPTIONS_BY_KEY.values()
-            if description.entity_registry_enabled_default
-        ]
+        read_keys: set[str] = set()
+        pending = list(active_keys)
+        while pending:
+            key = pending.pop()
+            description = DESCRIPTIONS_BY_KEY.get(key)
+            if description is None:
+                continue
+            if description.address is not None:
+                read_keys.add(key)
+            pending.extend(getattr(description, "dependencies", ()))
 
+        return [DESCRIPTIONS_BY_KEY[key] for key in sorted(read_keys)]

@@ -37,6 +37,36 @@
       "hkr_heizgrenze": {
         "name": "HKR Heizgrenze"
       },
+      "hkr_ruecklaufsoll_bei_heizgrenze": {
+        "name": "HKR Ruecklaufsoll Heizgrenze"
+      },
+      "hkr_ruecklaufsoll_bei_0c": {
+        "name": "HKR Ruecklaufsoll 0C"
+      },
+      "hkr_ruecklaufsoll_bei_minus_15c": {
+        "name": "HKR Ruecklaufsoll -15C"
+      },
+      "hkr_aufheiztemp": {
+        "name": "HKR Aufheiztemp"
+      },
+      "mischer1_ruecklaufsoll_bei_heizgrenze": {
+        "name": "Mischer1 Ruecklaufsoll Heizgrenze"
+      },
+      "mischer1_ruecklaufsoll_bei_0c": {
+        "name": "Mischer1 Ruecklaufsoll 0C"
+      },
+      "mischer1_ruecklaufsoll_bei_minus_15c": {
+        "name": "Mischer1 Ruecklaufsoll -15C"
+      },
+      "mischer1_aufheiztemp": {
+        "name": "Mischer1 Aufheiztemp"
+      },
+      "ruecklauf_soll_berechnet": {
+        "name": "Ruecklauf Soll berechnet"
+      },
+      "heizkreis_soll_berechnet": {
+        "name": "Heizkreis Soll berechnet"
+      },
       "hkpa01_istwert": {
         "name": "HKPA01 Istwert"
       },
@@ -72,6 +102,9 @@
       },
       "aussentemperatur": {
         "name": "Aussentemperatur"
+      },
+      "aussentemperatur_verzoegert": {
+        "name": "Aussentemperatur verzoegert"
       },
       "brauchwasser_temperatur": {
         "name": "Brauchwasser Temperatur"
