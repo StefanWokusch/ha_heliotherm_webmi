@@ -74,37 +74,37 @@
         "name": "Aussentemperatur"
       },
       "brauchwasser_temperatur": {
-        "name": "Brauchwasser Temperature"
+        "name": "Brauchwasser Temperatur"
       },
       "vorlauf_temperatur": {
-        "name": "Vorlauf Temperature"
+        "name": "Vorlauf Temperatur"
       },
       "ruecklauf_temperatur": {
-        "name": "Ruecklauf Temperature"
+        "name": "Ruecklauf Temperatur"
       },
       "pufferspeicher_temperatur": {
-        "name": "Pufferspeicher Temperature"
+        "name": "Pufferspeicher Temperatur"
       },
       "eq_eintritt_temperatur": {
-        "name": "EQ Eintritt Temperature"
+        "name": "EQ Eintritt Temperatur"
       },
       "eq_austritt_temperatur": {
-        "name": "EQ Austritt Temperature"
+        "name": "EQ Austritt Temperatur"
       },
       "oelsumpf_temperatur": {
-        "name": "Oelsumpf Temperature"
+        "name": "Oelsumpf Temperatur"
       },
       "sauggas_temperatur": {
-        "name": "Sauggas Temperature"
+        "name": "Sauggas Temperatur"
       },
       "frischwasser_temperatur": {
-        "name": "Frischwasser Temperature"
+        "name": "Frischwasser Temperatur"
       },
       "unterkuehlen_temperatur": {
-        "name": "Unterkuehlen Temperature"
+        "name": "Unterkuehlen Temperatur"
       },
       "heissgas_temperatur": {
-        "name": "Heissgas Temperature"
+        "name": "Heissgas Temperatur"
       },
       "raumtemperatur_1": {
         "name": "Raumtemperatur 1"
@@ -119,19 +119,19 @@
         "name": "Raumtemperatur 4"
       },
       "solar_kt1_temperatur": {
-        "name": "Solar KT1 Temperature"
+        "name": "Solar KT1 Temperatur"
       },
       "mischer1_vorlauf_temperatur": {
-        "name": "Mischer1 Vorlauf Temperature"
+        "name": "Mischer1 Vorlauf Temperatur"
       },
       "mischer1_ruecklauf_temperatur": {
-        "name": "Mischer1 Ruecklauf Temperature"
+        "name": "Mischer1 Ruecklauf Temperatur"
       },
       "mischer2_vorlauf_temperatur": {
-        "name": "Mischer2 Vorlauf Temperature"
+        "name": "Mischer2 Vorlauf Temperatur"
       },
       "mischer2_ruecklauf_temperatur": {
-        "name": "Mischer2 Ruecklauf Temperature"
+        "name": "Mischer2 Ruecklauf Temperatur"
       },
       "rcg_version": {
         "name": "RCG Version"
