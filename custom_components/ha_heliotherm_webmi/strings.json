@@ -31,45 +31,236 @@
   },
   "entity": {
     "sensor": {
-      "mischer1_heizgrenze": { "name": "Mischer1 Heizgrenze" },
-      "hkr_heizgrenze": { "name": "HKR Heizgrenze" },
-      "hkpa01_istwert": { "name": "HKPA01 Istwert" },
-      "mischer_betrieb": { "name": "Mischer Betrieb" },
-      "mischer_sollpos": { "name": "Mischer Sollposition Zeit" },
-      "vortex_flow_1": { "name": "Vortex Flow 1" },
-      "vortex_flow_2": { "name": "Vortex Flow 2" },
-      "heizkreispumpe_modus": { "name": "Heizkreispumpe Modus" },
-      "heizkreispumpe_zustand": { "name": "Heizkreispumpe Zustand" },
-      "vortex_type_1": { "name": "Vortex Type 1" },
-      "vortex_type_2": { "name": "Vortex Type 2" },
-      "pv_power": { "name": "PV Power" },
-      "rcg_serial": { "name": "RCG Serial" },
-      "aussentemperatur": { "name": "Aussentemperatur" },
-      "brauchwasser_temperatur": { "name": "Brauchwasser Temperatur" },
-      "vorlauf_temperatur": { "name": "Vorlauf Temperatur" },
-      "ruecklauf_temperatur": { "name": "Ruecklauf Temperatur" },
-      "pufferspeicher_temperatur": { "name": "Pufferspeicher Temperatur" },
-      "eq_eintritt_temperatur": { "name": "EQ Eintritt Temperatur" },
-      "eq_austritt_temperatur": { "name": "EQ Austritt Temperatur" },
-      "oelsumpf_temperatur": { "name": "Oelsumpf Temperatur" },
-      "sauggas_temperatur": { "name": "Sauggas Temperatur" },
-      "frischwasser_temperatur": { "name": "Frischwasser Temperatur" },
-      "unterkuehlen_temperatur": { "name": "Unterkuehlen Temperatur" },
-      "heissgas_temperatur": { "name": "Heissgas Temperatur" },
-      "raumtemperatur_1": { "name": "Raumtemperatur 1" },
-      "raumtemperatur_2": { "name": "Raumtemperatur 2" },
-      "raumtemperatur_3": { "name": "Raumtemperatur 3" },
-      "raumtemperatur_4": { "name": "Raumtemperatur 4" },
-      "solar_kt1_temperatur": { "name": "Solar KT1 Temperatur" },
-      "mischer1_vorlauf_temperatur": { "name": "Mischer1 Vorlauf Temperatur" },
-      "mischer1_ruecklauf_temperatur": { "name": "Mischer1 Ruecklauf Temperatur" },
-      "mischer2_vorlauf_temperatur": { "name": "Mischer2 Vorlauf Temperatur" },
-      "mischer2_ruecklauf_temperatur": { "name": "Mischer2 Ruecklauf Temperatur" }
+      "mischer1_heizgrenze": {
+        "name": "Mischer1 Heizgrenze"
+      },
+      "hkr_heizgrenze": {
+        "name": "HKR Heizgrenze"
+      },
+      "hkpa01_istwert": {
+        "name": "HKPA01 Istwert"
+      },
+      "mischer_betrieb": {
+        "name": "Mischer Betrieb"
+      },
+      "mischer_sollpos": {
+        "name": "Mischer Sollposition Zeit"
+      },
+      "vortex_flow_1": {
+        "name": "Vortex Flow 1"
+      },
+      "vortex_flow_2": {
+        "name": "Vortex Flow 2"
+      },
+      "heizkreispumpe_modus": {
+        "name": "Heizkreispumpe Modus"
+      },
+      "heizkreispumpe_zustand": {
+        "name": "Heizkreispumpe Zustand"
+      },
+      "vortex_type_1": {
+        "name": "Vortex Type 1"
+      },
+      "vortex_type_2": {
+        "name": "Vortex Type 2"
+      },
+      "pv_power": {
+        "name": "PV Power"
+      },
+      "rcg_serial": {
+        "name": "RCG Serial"
+      },
+      "aussentemperatur": {
+        "name": "Aussentemperatur"
+      },
+      "brauchwasser_temperatur": {
+        "name": "Brauchwasser Temperatur"
+      },
+      "vorlauf_temperatur": {
+        "name": "Vorlauf Temperatur"
+      },
+      "ruecklauf_temperatur": {
+        "name": "Ruecklauf Temperatur"
+      },
+      "pufferspeicher_temperatur": {
+        "name": "Pufferspeicher Temperatur"
+      },
+      "eq_eintritt_temperatur": {
+        "name": "EQ Eintritt Temperatur"
+      },
+      "eq_austritt_temperatur": {
+        "name": "EQ Austritt Temperatur"
+      },
+      "oelsumpf_temperatur": {
+        "name": "Oelsumpf Temperatur"
+      },
+      "sauggas_temperatur": {
+        "name": "Sauggas Temperatur"
+      },
+      "frischwasser_temperatur": {
+        "name": "Frischwasser Temperatur"
+      },
+      "unterkuehlen_temperatur": {
+        "name": "Unterkuehlen Temperatur"
+      },
+      "heissgas_temperatur": {
+        "name": "Heissgas Temperatur"
+      },
+      "raumtemperatur_1": {
+        "name": "Raumtemperatur 1"
+      },
+      "raumtemperatur_2": {
+        "name": "Raumtemperatur 2"
+      },
+      "raumtemperatur_3": {
+        "name": "Raumtemperatur 3"
+      },
+      "raumtemperatur_4": {
+        "name": "Raumtemperatur 4"
+      },
+      "solar_kt1_temperatur": {
+        "name": "Solar KT1 Temperatur"
+      },
+      "mischer1_vorlauf_temperatur": {
+        "name": "Mischer1 Vorlauf Temperatur"
+      },
+      "mischer1_ruecklauf_temperatur": {
+        "name": "Mischer1 Ruecklauf Temperatur"
+      },
+      "mischer2_vorlauf_temperatur": {
+        "name": "Mischer2 Vorlauf Temperatur"
+      },
+      "mischer2_ruecklauf_temperatur": {
+        "name": "Mischer2 Ruecklauf Temperatur"
+      },
+      "rcg_version": {
+        "name": "RCG Version"
+      },
+      "webregler_version": {
+        "name": "WebRegler Version"
+      },
+      "controller_zeit": {
+        "name": "Controller Zeit"
+      },
+      "thermische_leistung": {
+        "name": "Thermische Leistung"
+      },
+      "elektrische_aufnahmeleistung": {
+        "name": "Elektrische Aufnahmeleistung"
+      },
+      "cop_gesamt": {
+        "name": "COP Gesamt"
+      },
+      "thermische_energie_gesamt": {
+        "name": "Thermische Energie Gesamt"
+      },
+      "elektrische_energie_gesamt": {
+        "name": "Elektrische Energie Gesamt"
+      },
+      "thermische_energie_heizen": {
+        "name": "Thermische Energie Heizen"
+      },
+      "elektrische_energie_heizen": {
+        "name": "Elektrische Energie Heizen"
+      },
+      "thermische_energie_warmwasser": {
+        "name": "Thermische Energie Warmwasser"
+      },
+      "elektrische_energie_warmwasser": {
+        "name": "Elektrische Energie Warmwasser"
+      },
+      "anforderung": {
+        "name": "Anforderung"
+      },
+      "betriebsart": {
+        "name": "Betriebsart"
+      },
+      "startseiten_statuscode": {
+        "name": "Startseiten Statuscode"
+      },
+      "mischer1_betriebsart": {
+        "name": "Mischer1 Betriebsart"
+      },
+      "hochdruck": {
+        "name": "Hochdruck"
+      },
+      "wmz_volumenstrom": {
+        "name": "WMZ Volumenstrom"
+      },
+      "vdmod_status": {
+        "name": "VDMod Status"
+      },
+      "expansionsventil_istwert": {
+        "name": "Expansionsventil Istwert"
+      },
+      "mischer2_betrieb": {
+        "name": "Mischer2 Betrieb"
+      },
+      "eqa02_istwert": {
+        "name": "EQA02 Istwert"
+      },
+      "fehlerlog": {
+        "name": "Fehlerlog"
+      },
+      "verdichter_n_soll": {
+        "name": "Verdichter n-Soll"
+      }
     },
     "binary_sensor": {
-      "fu_soll_extern": { "name": "FU Soll Extern" },
-      "heizkreispumpe_service_ein": { "name": "Heizkreispumpe Service Ein" },
-      "heizkreispumpe_ext_anf_abhaengig": { "name": "Heizkreispumpe Ext Anf Abhaengig" }
+      "fu_soll_extern": {
+        "name": "FU Soll Extern"
+      },
+      "heizkreispumpe_service_ein": {
+        "name": "Heizkreispumpe Ein"
+      },
+      "heizkreispumpe_ext_anf_abhaengig": {
+        "name": "Heizkreispumpe Ext Anf Abhaengig"
+      },
+      "pufferpumpe_handwert": {
+        "name": "Pufferpumpe Handwert"
+      },
+      "eq_pumpe_zustand": {
+        "name": "EQ Pumpe Zustand"
+      },
+      "brauchwasserpumpe_handwert": {
+        "name": "Brauchwasserpumpe Handwert"
+      },
+      "umv_kuehlen_ein": {
+        "name": "UMV Kuehlen Ein"
+      },
+      "externe_pumpe_handwert": {
+        "name": "Externe Pumpe Handwert"
+      },
+      "zirkpumpe_zustand": {
+        "name": "Zirkpumpe Zustand"
+      },
+      "verdichter_ein": {
+        "name": "Verdichter Ein"
+      },
+      "stoerung_ein": {
+        "name": "Stoerung Ein"
+      },
+      "vierwegeventil_ein": {
+        "name": "4-Wege-Ventil Ein"
+      },
+      "hochdruckbe_aktiv": {
+        "name": "Hochdruckbegrenzer Aktiv"
+      },
+      "mse_quelle_aktiv": {
+        "name": "MSE Quelle Aktiv"
+      },
+      "ext_anforderung": {
+        "name": "Ext Anforderung"
+      },
+      "betriebsschalter_aktiv": {
+        "name": "Betriebsschalter Aktiv"
+      },
+      "evu_sperre_aktiv": {
+        "name": "EVU Sperre Aktiv"
+      },
+      "solarpumpe_status": {
+        "name": "Solarpumpe Status"
+      }
     }
   }
 }

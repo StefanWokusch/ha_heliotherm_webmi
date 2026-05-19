@@ -26,7 +26,8 @@ behavior is understood better.
 - Anonymous WebMI session creation
 - Small default-enabled sensor set for normal observation
 - Curated diagnostic sensors and binary sensors
-- Generated disabled-by-default catalogue for all known successful WebMI reads
+- Generated disabled-by-default catalogue for all known successful WebMI reads,
+  using recovered WebMI UI labels where available
 - Home Assistant diagnostics download with an on-demand full WebMI snapshot
 - No Modbus dependency
 - No write/control support
@@ -52,11 +53,13 @@ single coordinator and batches WebMI addresses into one read request per update.
 Entities that are disabled in Home Assistant are not polled during normal
 updates.
 
-The default-enabled entity set is intentionally small: outside temperature,
-main flow/return/buffer temperatures, Mischer1 flow temperature, and the
-observed mixer percentage. Deeper service, room, setting, counter, and unknown
-WebMI points are present in the entity registry but disabled by default. Enable
-individual diagnostics in Home Assistant only when you want them polled.
+The default-enabled entity set is intentionally focused on normal observation:
+outside temperature, main flow/return/buffer temperatures, Mischer1 flow
+temperature, observed mixer percentage, current demand/mode/status, compressor
+and lock/request binary states, current thermal/electrical power, COP, WMZ flow,
+and compressor request. Deeper service, room, setting, counter, actuator, and
+unknown WebMI points are present in the entity registry but disabled by default.
+Enable individual diagnostics in Home Assistant only when you want them polled.
 
 The Home Assistant diagnostics download performs a separate on-demand crawl of
 the visible WebMI SVG pages and reads all discovered addresses. This is intended

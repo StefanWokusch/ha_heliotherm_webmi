@@ -15,6 +15,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
+    UnitOfEnergy,
     UnitOfPower,
     UnitOfTemperature,
     UnitOfTime,
@@ -72,6 +73,34 @@ def pump_state(value: Any) -> str | None:
     }.get(numeric, optional_text(value))
 
 
+def operating_mode(value: Any) -> str | None:
+    """Render the observed WebMI operating mode enum."""
+    numeric = number_value(value)
+    return {
+        0: "aus",
+        1: "automatik",
+        2: "kuehlen",
+        3: "sommer",
+        4: "dauerbetrieb",
+        5: "absenkbetrieb",
+        6: "urlaub",
+        7: "party",
+    }.get(numeric, optional_text(value))
+
+
+def demand_mode(value: Any) -> str | None:
+    """Render the observed Infobox demand enum."""
+    numeric = number_value(value)
+    return {
+        0: "keine_anforderung",
+        1: "kuehlen",
+        2: "heizen",
+        3: "warmwasser",
+        4: "externe_anforderung",
+        5: "pv_anforderung",
+    }.get(numeric, optional_text(value))
+
+
 @dataclass(frozen=True, kw_only=True)
 class WebMISensorEntityDescription(SensorEntityDescription):
     """Description for a WebMI sensor."""
@@ -93,7 +122,13 @@ def generated_native_unit(unit: str | None) -> str | None:
     return {
         "bar": "bar",
         "celsius": UnitOfTemperature.CELSIUS,
+        "h": UnitOfTime.HOURS,
+        "kwh": UnitOfEnergy.KILO_WATT_HOUR,
+        "kw": UnitOfPower.KILO_WATT,
+        "lph": "l/h",
         "percent": PERCENTAGE,
+        "s": UnitOfTime.SECONDS,
+        "w": UnitOfPower.WATT,
     }.get(unit)
 
 
@@ -224,6 +259,30 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
         value_fn=optional_text,
     ),
+    WebMISensorEntityDescription(
+        key="rcg_version",
+        translation_key="rcg_version",
+        address="mcg/data/version",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=optional_text,
+    ),
+    WebMISensorEntityDescription(
+        key="webregler_version",
+        translation_key="webregler_version",
+        address="mcg/data/web/version",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=optional_text,
+    ),
+    WebMISensorEntityDescription(
+        key="controller_zeit",
+        translation_key="controller_zeit",
+        address="mcg/data/web/time",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=optional_text,
+    ),
 )
 
 
@@ -239,6 +298,106 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
         key="heizkreispumpe_service_ein",
         translation_key="heizkreispumpe_service_ein",
         address="webregler/mp/222/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="pufferpumpe_handwert",
+        translation_key="pufferpumpe_handwert",
+        address="webregler/mp/223/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="eq_pumpe_zustand",
+        translation_key="eq_pumpe_zustand",
+        address="webregler/mp/224/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="brauchwasserpumpe_handwert",
+        translation_key="brauchwasserpumpe_handwert",
+        address="webregler/mp/225/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="umv_kuehlen_ein",
+        translation_key="umv_kuehlen_ein",
+        address="webregler/mp/227/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="externe_pumpe_handwert",
+        translation_key="externe_pumpe_handwert",
+        address="webregler/mp/228/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="zirkpumpe_zustand",
+        translation_key="zirkpumpe_zustand",
+        address="webregler/mp/229/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="verdichter_ein",
+        translation_key="verdichter_ein",
+        address="webregler/mp/230/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="stoerung_ein",
+        translation_key="stoerung_ein",
+        address="webregler/mp/231/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="vierwegeventil_ein",
+        translation_key="vierwegeventil_ein",
+        address="webregler/mp/232/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="hochdruckbe_aktiv",
+        translation_key="hochdruckbe_aktiv",
+        address="webregler/mp/233/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="mse_quelle_aktiv",
+        translation_key="mse_quelle_aktiv",
+        address="webregler/mp/234/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="ext_anforderung",
+        translation_key="ext_anforderung",
+        address="webregler/mp/235/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="betriebsschalter_aktiv",
+        translation_key="betriebsschalter_aktiv",
+        address="webregler/mp/236/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="evu_sperre_aktiv",
+        translation_key="evu_sperre_aktiv",
+        address="webregler/mp/237/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="solarpumpe_status",
+        translation_key="solarpumpe_status",
+        address="webregler/mp/245/value",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
@@ -481,6 +640,210 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
     ),
 )
 
+EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
+    WebMISensorEntityDescription(
+        key="thermische_leistung",
+        translation_key="thermische_leistung",
+        address="webregler/mp/289/value",
+        native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="elektrische_aufnahmeleistung",
+        translation_key="elektrische_aufnahmeleistung",
+        address="webregler/mp/283/value",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="cop_gesamt",
+        translation_key="cop_gesamt",
+        address="webregler/mp/292/value",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="thermische_energie_gesamt",
+        translation_key="thermische_energie_gesamt",
+        address="webregler/mp/284/value",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="elektrische_energie_gesamt",
+        translation_key="elektrische_energie_gesamt",
+        address="webregler/mp/275/value",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="thermische_energie_heizen",
+        translation_key="thermische_energie_heizen",
+        address="webregler/mp/252/value",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="elektrische_energie_heizen",
+        translation_key="elektrische_energie_heizen",
+        address="webregler/mp/253/value",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="thermische_energie_warmwasser",
+        translation_key="thermische_energie_warmwasser",
+        address="webregler/mp/254/value",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="elektrische_energie_warmwasser",
+        translation_key="elektrische_energie_warmwasser",
+        address="webregler/mp/255/value",
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+)
+
+STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
+    WebMISensorEntityDescription(
+        key="anforderung",
+        translation_key="anforderung",
+        address="webregler/mp/256/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=demand_mode,
+    ),
+    WebMISensorEntityDescription(
+        key="betriebsart",
+        translation_key="betriebsart",
+        address="webregler/sp/313/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=operating_mode,
+    ),
+    WebMISensorEntityDescription(
+        key="startseiten_statuscode",
+        translation_key="startseiten_statuscode",
+        address="webregler/sp/310/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="mischer1_betriebsart",
+        translation_key="mischer1_betriebsart",
+        address="webregler/sp/3221/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=operating_mode,
+    ),
+    WebMISensorEntityDescription(
+        key="hochdruck",
+        translation_key="hochdruck",
+        address="webregler/mp/21/value",
+        native_unit_of_measurement="bar",
+        device_class=SensorDeviceClass.PRESSURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="wmz_volumenstrom",
+        translation_key="wmz_volumenstrom",
+        address="webregler/mp/285/value",
+        native_unit_of_measurement="l/h",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="vdmod_status",
+        translation_key="vdmod_status",
+        address="webregler/mp/240/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="verdichter_n_soll",
+        translation_key="verdichter_n_soll",
+        address="webregler/mp/290/value",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="expansionsventil_istwert",
+        translation_key="expansionsventil_istwert",
+        address="webregler/mp/251/value",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="mischer2_betrieb",
+        translation_key="mischer2_betrieb",
+        address="webregler/mp/274/value",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="eqa02_istwert",
+        translation_key="eqa02_istwert",
+        address="webregler/sp/3327/value",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="fehlerlog",
+        translation_key="fehlerlog",
+        address="mcg/data/errorLog",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=optional_text,
+    ),
+)
+
 GENERATED_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = tuple(
     WebMISensorEntityDescription(
         key=point["key"],
@@ -499,6 +862,8 @@ GENERATED_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = tuple(
 SENSOR_DESCRIPTIONS = (
     SENSOR_DESCRIPTIONS
     + TEMPERATURE_SENSOR_DESCRIPTIONS
+    + EFFICIENCY_SENSOR_DESCRIPTIONS
+    + STATUS_SENSOR_DESCRIPTIONS
     + GENERATED_SENSOR_DESCRIPTIONS
 )
 
