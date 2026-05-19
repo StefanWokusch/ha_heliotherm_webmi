@@ -6,6 +6,20 @@ This integration uses the local WebMI API behind the controller web UI. It is
 intentionally read-only: it creates no `select`, `number`, `switch`, or
 `climate` entities and does not call WebMI `write`.
 
+## Why this exists
+
+This project was started after problems with the existing Heliotherm control
+path in this installation. The current working suspicion is that enabling the
+external Smartboss/Smart Grid/Modbus-style control path can change how the
+Heliotherm controller interprets requests and may disturb normal programmed
+behavior.
+
+For that reason this integration is intentionally a separate WebMI read path.
+The first goal is to observe the controller safely through the same local API
+used by the web UI, without changing heat pump settings. Write/control support
+is out of scope until the read-only entities are stable and the controller
+behavior is understood better.
+
 ## Current scope
 
 - Local polling via HTTP `POST /webMI/?read`
@@ -44,4 +58,3 @@ for investigation snapshots, not normal polling.
 
 The first version is deliberately read-only. It never calls WebMI `write` and
 does not expose Home Assistant controls that can change heat pump settings.
-
