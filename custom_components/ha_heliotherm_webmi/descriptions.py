@@ -63,6 +63,36 @@ def on_off(value: Any) -> str | None:
     return optional_text(value)
 
 
+def active_state(value: Any) -> str | None:
+    """Render common diagnostic active/inactive values."""
+    numeric = number_value(value)
+    if numeric == 0:
+        return "inaktiv"
+    if numeric == 1:
+        return "aktiv"
+    return optional_text(value)
+
+
+def compressor_state(value: Any) -> str | None:
+    """Render compressor running state."""
+    numeric = number_value(value)
+    if numeric == 0:
+        return "aus"
+    if numeric == 1:
+        return "laeuft"
+    return optional_text(value)
+
+
+def fault_state(value: Any) -> str | None:
+    """Render fault state."""
+    numeric = number_value(value)
+    if numeric == 0:
+        return "ok"
+    if numeric == 1:
+        return "stoerung"
+    return optional_text(value)
+
+
 def pump_state(value: Any) -> str | None:
     """Render the observed pump state enum."""
     numeric = number_value(value)
@@ -344,18 +374,6 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
         entity_registry_enabled_default=False,
     ),
     WebMIBinarySensorEntityDescription(
-        key="verdichter_ein",
-        translation_key="verdichter_ein",
-        address="webregler/mp/230/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    WebMIBinarySensorEntityDescription(
-        key="stoerung_ein",
-        translation_key="stoerung_ein",
-        address="webregler/mp/231/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    WebMIBinarySensorEntityDescription(
         key="vierwegeventil_ein",
         translation_key="vierwegeventil_ein",
         address="webregler/mp/232/value",
@@ -375,24 +393,6 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
         address="webregler/mp/234/value",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
-    ),
-    WebMIBinarySensorEntityDescription(
-        key="ext_anforderung",
-        translation_key="ext_anforderung",
-        address="webregler/mp/235/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    WebMIBinarySensorEntityDescription(
-        key="betriebsschalter_aktiv",
-        translation_key="betriebsschalter_aktiv",
-        address="webregler/mp/236/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    WebMIBinarySensorEntityDescription(
-        key="evu_sperre_aktiv",
-        translation_key="evu_sperre_aktiv",
-        address="webregler/mp/237/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     WebMIBinarySensorEntityDescription(
         key="solarpumpe_status",
@@ -758,6 +758,41 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/sp/310/value",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="verdichter_status",
+        translation_key="verdichter_status",
+        address="webregler/mp/230/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=compressor_state,
+    ),
+    WebMISensorEntityDescription(
+        key="stoerung_status",
+        translation_key="stoerung_status",
+        address="webregler/mp/231/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=fault_state,
+    ),
+    WebMISensorEntityDescription(
+        key="externe_anforderung_status",
+        translation_key="externe_anforderung_status",
+        address="webregler/mp/235/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=active_state,
+    ),
+    WebMISensorEntityDescription(
+        key="betriebsschalter_status",
+        translation_key="betriebsschalter_status",
+        address="webregler/mp/236/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=active_state,
+    ),
+    WebMISensorEntityDescription(
+        key="evu_sperre_status",
+        translation_key="evu_sperre_status",
+        address="webregler/mp/237/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=active_state,
     ),
     WebMISensorEntityDescription(
         key="mischer1_betriebsart",

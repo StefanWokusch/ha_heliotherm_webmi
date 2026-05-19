@@ -204,6 +204,21 @@
       },
       "verdichter_n_soll": {
         "name": "Verdichter n-Soll"
+      },
+      "verdichter_status": {
+        "name": "Verdichter"
+      },
+      "stoerung_status": {
+        "name": "Stoerung"
+      },
+      "externe_anforderung_status": {
+        "name": "Externe Anforderung"
+      },
+      "betriebsschalter_status": {
+        "name": "Betriebsschalter"
+      },
+      "evu_sperre_status": {
+        "name": "EVU Sperre"
       }
     },
     "binary_sensor": {
