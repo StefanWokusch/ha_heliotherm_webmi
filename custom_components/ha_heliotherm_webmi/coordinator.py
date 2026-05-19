@@ -52,9 +52,9 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
         """Start the WebMI subscribedata/publish loop."""
         if not self._use_subscriptions or self._subscription_task is not None:
             return
-        self._subscription_task = self.hass.async_create_task(
+        self._subscription_task = self.hass.async_create_background_task(
             self._subscription_loop(),
-            name="heliotherm_webmi_subscription",
+            "heliotherm_webmi_subscription",
         )
 
     async def async_stop_subscription(self) -> None:
