@@ -1,0 +1,14 @@
+{
+  "domain": "ha_heliotherm_webmi",
+  "name": "Heliotherm WebMI",
+  "after_dependencies": [],
+  "codeowners": ["@StefanWokusch"],
+  "config_flow": true,
+  "documentation": "https://github.com/StefanWokusch/ha_heliotherm_webmi",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/StefanWokusch/ha_heliotherm_webmi/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
+

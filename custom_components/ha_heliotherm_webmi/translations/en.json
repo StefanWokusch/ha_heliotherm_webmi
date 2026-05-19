@@ -1,0 +1,55 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Heliotherm WebMI",
+        "description": "Connect to the local Heliotherm WebMI web interface.",
+        "data": {
+          "name": "Name",
+          "host": "Host",
+          "port": "Port",
+          "scan_interval": "Polling interval in seconds"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the WebMI API."
+    },
+    "abort": {
+      "already_configured": "This Heliotherm WebMI host is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Heliotherm WebMI options",
+        "data": {
+          "scan_interval": "Polling interval in seconds"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "mischer1_heizgrenze": { "name": "Mischer1 Heizgrenze" },
+      "hkr_heizgrenze": { "name": "HKR Heizgrenze" },
+      "hkpa01_istwert": { "name": "HKPA01 Istwert" },
+      "mischer_betrieb": { "name": "Mischer Betrieb" },
+      "mischer_sollpos": { "name": "Mischer Sollposition" },
+      "vortex_flow_1": { "name": "Vortex Flow 1" },
+      "vortex_flow_2": { "name": "Vortex Flow 2" },
+      "heizkreispumpe_modus": { "name": "Heizkreispumpe Modus" },
+      "heizkreispumpe_zustand": { "name": "Heizkreispumpe Zustand" },
+      "vortex_type_1": { "name": "Vortex Type 1" },
+      "vortex_type_2": { "name": "Vortex Type 2" },
+      "pv_power": { "name": "PV Power" },
+      "rcg_serial": { "name": "RCG Serial" }
+    },
+    "binary_sensor": {
+      "fu_soll_extern": { "name": "FU Soll Extern" },
+      "heizkreispumpe_service_ein": { "name": "Heizkreispumpe Service Ein" },
+      "heizkreispumpe_ext_anf_abhaengig": { "name": "Heizkreispumpe Ext Anf Abhaengig" }
+    }
+  }
+}
+
