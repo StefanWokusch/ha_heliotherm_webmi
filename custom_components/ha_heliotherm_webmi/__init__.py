@@ -120,5 +120,9 @@ def _entry_sort_key(entry: ConfigEntry) -> tuple[float, str]:
     """Return a stable order key for equivalent entries."""
     created_at = getattr(entry, "created_at", None)
     if created_at is None:
-        created_at = float("inf")
-    return (float(created_at), entry.entry_id)
+        sort_value = float("inf")
+    elif hasattr(created_at, "timestamp"):
+        sort_value = created_at.timestamp()
+    else:
+        sort_value = float(created_at)
+    return (sort_value, entry.entry_id)
