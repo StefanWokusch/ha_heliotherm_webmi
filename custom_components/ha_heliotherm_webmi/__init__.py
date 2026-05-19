@@ -46,9 +46,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         host=host,
         port=port,
     )
-    if any(
-        runtime.api.base_url == api.base_url for runtime in hass.data[DOMAIN].values()
-    ):
+    equivalent_entries = [
+        configured_entry
+        for configured_entry in hass.config_entries.async_entries(DOMAIN)
+        if _entry_base_url(configured_entry) == api.base_url
+    ]
+    primary_entry = min(equivalent_entries, key=lambda item: item.created_at)
+    if entry.entry_id != primary_entry.entry_id:
         _LOGGER.error("Duplicate Heliotherm WebMI entry for %s", api.base_url)
         return False
 
@@ -93,3 +97,14 @@ def _scan_interval(entry: ConfigEntry) -> int:
     except (TypeError, ValueError):
         seconds = DEFAULT_SCAN_INTERVAL
     return max(seconds, MIN_SCAN_INTERVAL)
+
+
+def _entry_base_url(entry: ConfigEntry) -> str | None:
+    """Return the normalized WebMI base URL for an entry."""
+    try:
+        return HeliothermWebMIClient._normalize_base_url(
+            entry.data[CONF_HOST],
+            int(entry.data.get(CONF_PORT, DEFAULT_PORT)),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
