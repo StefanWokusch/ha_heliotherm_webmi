@@ -29,6 +29,7 @@ behavior is understood better.
 - Generated disabled-by-default catalogue for all known successful WebMI reads,
   using recovered WebMI UI labels where available
 - Two clearly marked calculated setpoint sensors for the heating dashboard
+- Calculated total SCOP matching the WebMI efficiency page
 - Home Assistant diagnostics download with an on-demand full WebMI snapshot
 - No Modbus dependency
 - No write/control support
@@ -58,10 +59,11 @@ The default-enabled entity set is intentionally focused on normal observation:
 outside temperature, main flow/return/buffer temperatures, Mischer1 flow
 temperature, observed mixer percentage, current demand/mode/status, readable
 compressor/fault/lock/request states, current thermal/electrical power, COP,
-WMZ flow, Heizstab operation, compressor request, and the calculated heating
-setpoints. Deeper service, room, setting, counter, actuator, and unknown WebMI
-points are present in the entity registry but disabled by default. Enable
-individual diagnostics in Home Assistant only when you want them polled.
+calculated total SCOP, WMZ flow, Heizstab operation, compressor request, and
+the calculated heating setpoints. Deeper service, room, setting, counter,
+actuator, and unknown WebMI points are present in the entity registry but
+disabled by default. Enable individual diagnostics in Home Assistant only when
+you want them polled.
 
 The Home Assistant diagnostics download performs a separate on-demand crawl of
 the visible WebMI SVG pages and reads all discovered addresses. This is intended
@@ -91,6 +93,19 @@ Heizkreis Soll berechnet = Mischer1 curve(Aussentemperatur verzoegert) + Mischer
 This matched retained Modbus snapshots and one physical display check closely,
 but it remains an inferred value, not a direct WebMI value. The entity attributes
 include `source=calculated`, the formula, and the dependency keys.
+
+## Calculated SCOP
+
+The WebMI efficiency page does not expose `SCOP` as its own readable WebMI
+address in the local snapshots. The displayed `SCOP Gesamt` matches the ratio
+of the cumulative total energy counters:
+
+```text
+SCOP Gesamt berechnet = Thermische Energie Gesamt / Elektrische Energie Gesamt
+```
+
+Example from the `2026-05-19 21:17` read-only snapshot:
+`2016.4 kWh / 375.8 kWh = 5.3656`, displayed by WebMI as `5.4`.
 
 ## Safety
 

@@ -184,6 +184,9 @@
       "cop_gesamt": {
         "name": "COP Gesamt"
       },
+      "scop_gesamt_berechnet": {
+        "name": "SCOP Gesamt berechnet"
+      },
       "thermische_energie_gesamt": {
         "name": "Thermische Energie Gesamt"
       },

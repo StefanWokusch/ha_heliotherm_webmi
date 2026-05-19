@@ -207,6 +207,17 @@ def calculated_mischer1_soll(values: dict[str, Any]) -> float | None:
     )
 
 
+def calculated_scop_gesamt(values: dict[str, Any]) -> float | None:
+    """Calculate the WebMI total SCOP from cumulative total energy counters."""
+    thermal = values.get("thermische_energie_gesamt")
+    electrical = values.get("elektrische_energie_gesamt")
+    if not isinstance(thermal, int | float) or not isinstance(electrical, int | float):
+        return None
+    if electrical <= 0:
+        return None
+    return round(thermal / electrical, 1)
+
+
 @dataclass(frozen=True, kw_only=True)
 class WebMISensorEntityDescription(SensorEntityDescription):
     """Description for a WebMI sensor."""
@@ -884,6 +895,24 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="scop_gesamt_berechnet",
+        translation_key="scop_gesamt_berechnet",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        dependencies=(
+            "thermische_energie_gesamt",
+            "elektrische_energie_gesamt",
+        ),
+        calculate_fn=calculated_scop_gesamt,
+        calculation_attributes=MappingProxyType(
+            {
+                "source": "calculated",
+                "formula": "thermische_energie_gesamt / elektrische_energie_gesamt",
+                "note": "Matches the WebMI total SCOP display rounded to one decimal.",
+            }
+        ),
     ),
     WebMISensorEntityDescription(
         key="thermische_energie_gesamt",
