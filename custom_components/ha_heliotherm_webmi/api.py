@@ -97,28 +97,65 @@ class HeliothermWebMIClient:
         if not unique_addresses:
             return {}
 
-        await self._ensure_session()
-        response = await self._post_json(
-            "read",
-            data=[("address[]", address) for address in unique_addresses],
-            headers=self._x_webmi_header(),
-        )
-
-        if response.get("error") == 454:
-            _LOGGER.debug("WebMI session expired or missing; recreating session")
+        response = await self._read_addresses_once(unique_addresses)
+        if self._should_retry_read(response, len(unique_addresses)):
+            _LOGGER.debug("WebMI read failed or session expired; recreating session")
             self.reset_session()
-            await self._ensure_session()
-            response = await self._post_json(
-                "read",
-                data=[("address[]", address) for address in unique_addresses],
-                headers=self._x_webmi_header(),
-            )
+            response = await self._read_addresses_once(unique_addresses)
 
-        result_items = response.get("result", [])
+        self._raise_for_invalid_read_response(response, len(unique_addresses))
+        result_items = response.get("result") or []
+
         return {
             address: WebMIReadResult.from_payload(item)
             for address, item in zip(unique_addresses, result_items, strict=False)
         }
+
+    async def _read_addresses_once(self, addresses: list[str]) -> dict[str, Any]:
+        """Read addresses once with the current or a newly created session."""
+        await self._ensure_session()
+        return await self._post_json(
+            "read",
+            data=[("address[]", address) for address in addresses],
+            headers=self._x_webmi_header(),
+        )
+
+    @staticmethod
+    def _should_retry_read(response: dict[str, Any], expected_count: int) -> bool:
+        """Return whether a read response looks like a stale-session batch."""
+        top_error = response.get("error")
+        if top_error not in (None, 0):
+            return True
+
+        result_items = response.get("result")
+        if not isinstance(result_items, list) or len(result_items) != expected_count:
+            return True
+
+        if any(item.get("error") == 454 for item in result_items):
+            return True
+
+        return False
+
+    @staticmethod
+    def _raise_for_invalid_read_response(
+        response: dict[str, Any],
+        expected_count: int,
+    ) -> None:
+        """Raise when a read response cannot be mapped safely to addresses."""
+        top_error = response.get("error")
+        if top_error not in (None, 0):
+            raise WebMIError(
+                "WebMI read returned top-level error "
+                f"{top_error}: {response.get('errorstring')}"
+            )
+
+        result_items = response.get("result")
+        if not isinstance(result_items, list) or len(result_items) != expected_count:
+            result_count = len(result_items) if isinstance(result_items, list) else 0
+            raise WebMIError(
+                "WebMI read returned an incomplete result batch "
+                f"({result_count}/{expected_count} values)"
+            )
 
     async def discover_addresses(self) -> list[str]:
         """Discover visible WebMI addresses by crawling the SVG menu tree."""
@@ -231,4 +268,3 @@ class HeliothermWebMIClient:
         message = b"\x00\x02" + bytes(padding) + b"\x00" + payload
         encrypted = pow(int.from_bytes(message, "big"), exponent, modulus)
         return encrypted.to_bytes(key_length, "big").hex()
-
