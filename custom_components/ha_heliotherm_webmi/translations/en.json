@@ -261,7 +261,7 @@
         "name": "Betriebsschalter"
       },
       "evu_sperre_status": {
-        "name": "EVU Input"
+        "name": "EVU Eingang"
       },
       "heizstab_betrieb": {
         "name": "Heizstab Betrieb"
@@ -317,7 +317,7 @@
         "name": "Betriebsschalter Aktiv"
       },
       "evu_sperre_aktiv": {
-        "name": "EVU Input Active"
+        "name": "EVU Eingang Aktiv"
       },
       "solarpumpe_status": {
         "name": "Solarpumpe Status"
