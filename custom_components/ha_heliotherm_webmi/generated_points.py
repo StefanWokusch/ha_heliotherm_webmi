@@ -181,9 +181,9 @@ GENERATED_SENSOR_POINTS: tuple[dict[str, str | None], ...] = (
     },
     {
         "key": "diag_mp_265",
-        "name": "BSZ Pumpen 2 Mischer 1 2",
+        "name": "Mischerpumpe Zustand Rohwert",
         "address": "webregler/mp/265/value",
-        "unit": 'h',
+        "unit": None,
     },
     {
         "key": "diag_sp_3279",

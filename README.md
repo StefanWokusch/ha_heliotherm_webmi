@@ -111,12 +111,17 @@ is not the compressor restart lockout / `Sperrzeit` shown after a run. It is
 kept as a disabled-by-default diagnostic input, not as a normal dashboard lock
 state.
 
-`Heizkreispumpe` uses the digital output `webregler/mp/222/value` from
-`Gesamtdaten > EinAusgang > AusgDigital > Heizkreispumpe`. The separate
-`HKPA01 Analogausgang` value uses `webregler/mp/247/value` from
-`AusgAnalog > HKPA01`; it is a percentage output and must not be displayed as
-the simple on/off heating-circuit pump state. It is kept disabled by default as
-a diagnostic value until its exact physical pump/actuator mapping is confirmed.
+`Mischerpumpe` uses the visible WebMI state `webregler/mp/265/value` from
+`Gesamtdaten > EinAusgang > AusgDigital > Mischerpumpe` and is the best-known
+on/off state for the active mixed heating circuit pump on the observed
+installation. The separate `Heizkreispumpe WP Ausgang` value uses
+`webregler/mp/222/value` from `AusgDigital > Heizkreispumpe` and is kept as a
+disabled-by-default diagnostic because it does not reliably describe the
+dashboard heating-circuit pump in this setup. The separate `HKPA01
+Analogausgang` value uses `webregler/mp/247/value` from `AusgAnalog > HKPA01`;
+it is a percentage output and must not be displayed as the simple on/off
+heating-circuit pump state. It is kept disabled by default as a diagnostic
+value until its exact physical pump/actuator mapping is confirmed.
 
 `Kondensatordruck` and `Verdampferdruck` use the WebMI pressure values from
 `Service > Sicherheitskette`: `webregler/mp/221/value` for condensate/condenser

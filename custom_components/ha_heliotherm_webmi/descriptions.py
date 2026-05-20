@@ -574,6 +574,13 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
         key="heizkreispumpe_service_ein",
         translation_key="heizkreispumpe_service_ein",
         address="webregler/mp/222/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="mischerpumpe_zustand",
+        translation_key="mischerpumpe_zustand",
+        address="webregler/mp/265/value",
     ),
     WebMIBinarySensorEntityDescription(
         key="pufferpumpe_handwert",

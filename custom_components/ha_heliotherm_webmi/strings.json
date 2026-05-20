@@ -272,7 +272,10 @@
         "name": "FU Soll Extern"
       },
       "heizkreispumpe_service_ein": {
-        "name": "Heizkreispumpe"
+        "name": "Heizkreispumpe WP Ausgang"
+      },
+      "mischerpumpe_zustand": {
+        "name": "Mischerpumpe"
       },
       "heizkreispumpe_ext_anf_abhaengig": {
         "name": "Heizkreispumpe Ext Anf Abhaengig"
