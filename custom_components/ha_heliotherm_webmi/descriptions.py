@@ -1051,6 +1051,15 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
+        key="niederdruck",
+        translation_key="niederdruck",
+        address="webregler/sp/3308/value",
+        native_unit_of_measurement="bar",
+        device_class=SensorDeviceClass.PRESSURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
         key="wmz_volumenstrom",
         translation_key="wmz_volumenstrom",
         address="webregler/mp/285/value",

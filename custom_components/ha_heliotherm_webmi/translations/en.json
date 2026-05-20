@@ -224,6 +224,9 @@
       "hochdruck": {
         "name": "Hochdruck"
       },
+      "niederdruck": {
+        "name": "Niederdruck"
+      },
       "wmz_volumenstrom": {
         "name": "WMZ Volumenstrom"
       },
