@@ -72,7 +72,7 @@
         "name": "Heizkreis Soll berechnet"
       },
       "hkpa01_istwert": {
-        "name": "HKPA01 Istwert"
+        "name": "HKPA01 Analogausgang"
       },
       "mischer_betrieb": {
         "name": "Mischer Betrieb"
@@ -222,10 +222,10 @@
         "name": "Mischer1 Betriebsart"
       },
       "hochdruck": {
-        "name": "Hochdruck"
+        "name": "Kondensatordruck"
       },
       "niederdruck": {
-        "name": "Niederdruck"
+        "name": "Verdampferdruck"
       },
       "wmz_volumenstrom": {
         "name": "WMZ Volumenstrom"
@@ -272,7 +272,7 @@
         "name": "FU Soll Extern"
       },
       "heizkreispumpe_service_ein": {
-        "name": "Heizkreispumpe Ein"
+        "name": "Heizkreispumpe"
       },
       "heizkreispumpe_ext_anf_abhaengig": {
         "name": "Heizkreispumpe Ext Anf Abhaengig"

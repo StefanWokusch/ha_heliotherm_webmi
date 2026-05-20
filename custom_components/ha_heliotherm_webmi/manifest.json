@@ -9,5 +9,5 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/StefanWokusch/ha_heliotherm_webmi/issues",
   "requirements": [],
-  "version": "0.1.25"
+  "version": "0.1.27"
 }

@@ -111,6 +111,20 @@ is not the compressor restart lockout / `Sperrzeit` shown after a run. It is
 kept as a disabled-by-default diagnostic input, not as a normal dashboard lock
 state.
 
+`Heizkreispumpe` uses the digital output `webregler/mp/222/value` from
+`Gesamtdaten > EinAusgang > AusgDigital > Heizkreispumpe`. The separate
+`HKPA01 Analogausgang` value uses `webregler/mp/247/value` from
+`AusgAnalog > HKPA01`; it is a percentage output and must not be displayed as
+the simple on/off heating-circuit pump state. It is kept disabled by default as
+a diagnostic value until its exact physical pump/actuator mapping is confirmed.
+
+`Kondensatordruck` and `Verdampferdruck` use the WebMI pressure values from
+`Service > Sicherheitskette`: `webregler/mp/221/value` for condensate/condenser
+pressure and `webregler/mp/220/value` for evaporator pressure. Older candidate
+points such as `MP21` and `SP3308` are not used for the dashboard pressure
+cards because live WebMI display checks showed that they do not match the
+visible pressure pages on this installation.
+
 ## Calculated setpoints
 
 The controller WebMI read API does not expose the current calculated `Ruecklauf

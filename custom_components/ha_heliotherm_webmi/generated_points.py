@@ -1771,7 +1771,7 @@ GENERATED_SENSOR_POINTS: tuple[dict[str, str | None], ...] = (
     },
     {
         "key": "diag_mp_220",
-        "name": "Temp 2 Kondensat temp",
+        "name": "Verdampf Druck Aktueller Wert",
         "address": "webregler/mp/220/value",
         "unit": 'bar',
     },
@@ -1789,7 +1789,7 @@ GENERATED_SENSOR_POINTS: tuple[dict[str, str | None], ...] = (
     },
     {
         "key": "diag_mp_221",
-        "name": "Temp 2 Solar KT 1",
+        "name": "Kondensat Druck Aktueller Wert",
         "address": "webregler/mp/221/value",
         "unit": 'bar',
     },
