@@ -19,8 +19,8 @@ For that reason this integration is intentionally a separate WebMI path. The
 first goal was to observe the controller safely through the same local API used
 by the web UI, without changing heat pump settings. Write/control support starts
 small: only selected user-facing WebMI controls are exposed,
-while service, heating-curve, pump, compressor, lock, reset, and raw diagnostic
-values stay read-only.
+while service, heating-curve, pump, compressor, reset, and raw diagnostic values
+stay read-only.
 
 ## Current scope
 
@@ -82,7 +82,7 @@ request, reset counters, or other service points.
 The default-enabled entity set is intentionally focused on normal observation:
 outside temperature, main flow/return/buffer temperatures, Mischer1 flow
 temperature, observed mixer percentage, current demand/mode/status, readable
-compressor/fault/lock/request states, current thermal/electrical power, COP,
+compressor/fault/request states, current thermal/electrical power, COP,
 calculated total SCOP, WMZ flow, Heizstab operation, compressor request, and
 the calculated heating setpoints. Deeper service, room, setting, counter,
 actuator, and unknown WebMI points are present in the entity registry but
@@ -103,6 +103,13 @@ for investigation snapshots, not normal polling.
 `EQ Luefter Istwert` uses the live WebMI value `webregler/mp/248/value`. Nearby
 EQA02 `sp/*` values such as `SP3327=40%` are configuration parameters from the
 same controller page, not the current fan output.
+
+`EVU Eingang` uses `webregler/mp/237/value` from the WebMI service page
+`Gesamtdaten > EinAusgang > EingDigital > EVUSperre`. On the observed
+installation this input can stay `aktiv` while the compressor is running, so it
+is not the compressor restart lockout / `Sperrzeit` shown after a run. It is
+kept as a disabled-by-default diagnostic input, not as a normal dashboard lock
+state.
 
 ## Calculated setpoints
 

@@ -1031,6 +1031,8 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         key="evu_sperre_status",
         translation_key="evu_sperre_status",
         address="webregler/mp/237/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=active_state,
     ),
     WebMISensorEntityDescription(
