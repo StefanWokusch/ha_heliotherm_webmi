@@ -259,6 +259,25 @@ def generated_device_class(unit: str | None) -> SensorDeviceClass | None:
     return None
 
 
+NORMAL_GENERATED_POINT_PREFIXES = (
+    "Heizkreis Sollwert ",
+    "Mischer1 Sollwert ",
+    "Mischer2 Sollwert ",
+    "Warmwasser Sollwert ",
+)
+
+
+def generated_entity_category(point: Mapping[str, Any]) -> EntityCategory | None:
+    """Classify generated points by recovered WebMI label."""
+    name = point.get("name")
+    if isinstance(name, str) and (
+        name.startswith(NORMAL_GENERATED_POINT_PREFIXES)
+        or name == "Main Kuehlen Soll"
+    ):
+        return None
+    return EntityCategory.DIAGNOSTIC
+
+
 SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
     WebMISensorEntityDescription(
         key="mischer1_heizgrenze",
@@ -364,7 +383,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         dependencies=(
             "aussentemperatur_verzoegert",
             "hkr_heizgrenze",
@@ -388,7 +406,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         dependencies=(
             "aussentemperatur_verzoegert",
             "mischer1_heizgrenze",
@@ -412,7 +429,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/247/value",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -422,7 +438,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/268/value",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -440,7 +455,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/2104/value",
         native_unit_of_measurement="l/min",
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -450,7 +464,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/2105/value",
         native_unit_of_measurement="l/min",
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -466,7 +479,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         key="heizkreispumpe_zustand",
         translation_key="heizkreispumpe_zustand",
         address="webregler/sp/337/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=pump_state,
     ),
@@ -493,7 +505,6 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -551,21 +562,18 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
         key="pufferpumpe_handwert",
         translation_key="pufferpumpe_handwert",
         address="webregler/mp/223/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     WebMIBinarySensorEntityDescription(
         key="eq_pumpe_zustand",
         translation_key="eq_pumpe_zustand",
         address="webregler/mp/224/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     WebMIBinarySensorEntityDescription(
         key="brauchwasserpumpe_handwert",
         translation_key="brauchwasserpumpe_handwert",
         address="webregler/mp/225/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     WebMIBinarySensorEntityDescription(
@@ -586,7 +594,6 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
         key="zirkpumpe_zustand",
         translation_key="zirkpumpe_zustand",
         address="webregler/mp/229/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
     WebMIBinarySensorEntityDescription(
@@ -635,7 +642,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -656,7 +662,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -667,7 +672,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -677,7 +681,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -687,7 +690,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -697,7 +699,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -708,7 +709,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -730,7 +730,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -741,7 +740,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -763,7 +761,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -829,7 +826,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -839,7 +835,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -850,7 +845,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -861,7 +855,6 @@ TEMPERATURE_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -875,7 +868,6 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -885,7 +877,6 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -893,14 +884,12 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         translation_key="cop_gesamt",
         address="webregler/mp/292/value",
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
         key="scop_gesamt_berechnet",
         translation_key="scop_gesamt_berechnet",
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         dependencies=(
             "thermische_energie_gesamt",
             "elektrische_energie_gesamt",
@@ -921,7 +910,6 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -932,7 +920,6 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -943,7 +930,6 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -954,7 +940,6 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -965,7 +950,6 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -976,7 +960,6 @@ EFFICIENCY_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -987,14 +970,12 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         key="anforderung",
         translation_key="anforderung",
         address="webregler/mp/256/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=demand_mode,
     ),
     WebMISensorEntityDescription(
         key="betriebsart",
         translation_key="betriebsart",
         address="webregler/sp/313/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=operating_mode,
     ),
     WebMISensorEntityDescription(
@@ -1008,42 +989,36 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         key="verdichter_status",
         translation_key="verdichter_status",
         address="webregler/mp/230/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=compressor_state,
     ),
     WebMISensorEntityDescription(
         key="stoerung_status",
         translation_key="stoerung_status",
         address="webregler/mp/231/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=fault_state,
     ),
     WebMISensorEntityDescription(
         key="externe_anforderung_status",
         translation_key="externe_anforderung_status",
         address="webregler/mp/235/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=active_state,
     ),
     WebMISensorEntityDescription(
         key="betriebsschalter_status",
         translation_key="betriebsschalter_status",
         address="webregler/mp/236/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=active_state,
     ),
     WebMISensorEntityDescription(
         key="evu_sperre_status",
         translation_key="evu_sperre_status",
         address="webregler/mp/237/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=active_state,
     ),
     WebMISensorEntityDescription(
         key="mischer1_betriebsart",
         translation_key="mischer1_betriebsart",
         address="webregler/sp/3221/value",
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=operating_mode,
     ),
@@ -1054,7 +1029,6 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         native_unit_of_measurement="bar",
         device_class=SensorDeviceClass.PRESSURE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -1064,7 +1038,6 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/285/value",
         native_unit_of_measurement="l/h",
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -1073,7 +1046,6 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/249/value",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -1090,7 +1062,6 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/290/value",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -1109,7 +1080,6 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/274/value",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -1119,7 +1089,6 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/248/value",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=number_value,
     ),
@@ -1140,7 +1109,7 @@ GENERATED_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = tuple(
         address=point["address"],
         native_unit_of_measurement=generated_native_unit(point["unit"]),
         device_class=generated_device_class(point["unit"]),
-        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_category=generated_entity_category(point),
         entity_registry_enabled_default=False,
         value_fn=raw_value,
     )

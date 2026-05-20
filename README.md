@@ -76,6 +76,13 @@ actuator, and unknown WebMI points are present in the entity registry but
 disabled by default. Enable individual diagnostics in Home Assistant only when
 you want them polled.
 
+Entity categories follow the Home Assistant convention: normal user-facing
+values are plain sensors, while controller internals, raw generated points,
+service parameters, uncertain values, and support/debug fields are marked as
+diagnostic. Useful but currently non-dashboard values, including Warmwasser
+temperature/energy and user-facing generated setpoints, are kept as normal
+sensors but disabled by default.
+
 The Home Assistant diagnostics download performs a separate on-demand crawl of
 the visible WebMI SVG pages and reads all discovered addresses. This is intended
 for investigation snapshots, not normal polling.
