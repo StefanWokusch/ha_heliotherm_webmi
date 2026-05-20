@@ -14,8 +14,10 @@ import voluptuous as vol
 
 from .api import HeliothermWebMIClient, WebMIError
 from .const import (
+    CONF_ENABLE_WRITES,
     CONF_SCAN_INTERVAL,
     CONF_USE_SUBSCRIPTIONS,
+    DEFAULT_ENABLE_WRITES,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
@@ -78,6 +80,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_USE_SUBSCRIPTIONS,
                         default=DEFAULT_USE_SUBSCRIPTIONS,
+                    ): cv.boolean,
+                    vol.Required(
+                        CONF_ENABLE_WRITES,
+                        default=DEFAULT_ENABLE_WRITES,
                     ): cv.boolean,
                 }
             ),
@@ -143,6 +149,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             self.config_entry.data.get(
                                 CONF_USE_SUBSCRIPTIONS,
                                 DEFAULT_USE_SUBSCRIPTIONS,
+                            ),
+                        ),
+                    ): cv.boolean,
+                    vol.Required(
+                        CONF_ENABLE_WRITES,
+                        default=self.config_entry.options.get(
+                            CONF_ENABLE_WRITES,
+                            self.config_entry.data.get(
+                                CONF_ENABLE_WRITES,
+                                DEFAULT_ENABLE_WRITES,
                             ),
                         ),
                     ): cv.boolean,

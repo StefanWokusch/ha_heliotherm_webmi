@@ -1,10 +1,10 @@
 # Heliotherm WebMI for Home Assistant
 
-Read-only Home Assistant custom integration for Heliotherm RCG/WebMI controllers.
+Home Assistant custom integration for Heliotherm RCG/WebMI controllers.
 
 This integration uses the local WebMI API behind the controller web UI. It is
-intentionally read-only: it creates no `select`, `number`, `switch`, or
-`climate` entities and does not call WebMI `write`.
+read-only by default. Optional write controls can be enabled explicitly in the
+integration options.
 
 ## Why this exists
 
@@ -14,11 +14,12 @@ external Smartboss/Smart Grid/Modbus-style control path can change how the
 Heliotherm controller interprets requests and may disturb normal programmed
 behavior.
 
-For that reason this integration is intentionally a separate WebMI read path.
-The first goal is to observe the controller safely through the same local API
-used by the web UI, without changing heat pump settings. Write/control support
-is out of scope until the read-only entities are stable and the controller
-behavior is understood better.
+For that reason this integration is intentionally a separate WebMI path. The
+first goal was to observe the controller safely through the same local API used
+by the web UI, without changing heat pump settings. Write/control support starts
+small and remains opt-in: only selected user-facing WebMI controls are exposed,
+while service, heating-curve, pump, compressor, lock, reset, and raw diagnostic
+values stay read-only.
 
 ## Current scope
 
@@ -32,8 +33,12 @@ behavior is understood better.
 - Two clearly marked calculated setpoint sensors for the heating dashboard
 - Calculated total SCOP matching the WebMI efficiency page
 - Home Assistant diagnostics download with an on-demand full WebMI snapshot
+- Optional write controls for a small user-facing set:
+  - `Betriebsart setzen`
+  - `Raum Soll`
+  - `Warmwasser Soll Norm`
+  - `Warmwasser Soll Min`
 - No Modbus dependency
-- No write/control support
 
 ## Installation
 
@@ -65,6 +70,14 @@ integration and uses the configured polling interval directly.
 
 Entities that are disabled in Home Assistant are not subscribed or polled during
 normal updates.
+
+Write-capable Home Assistant entities are only created when `Enable WebMI write
+controls` is enabled in the integration options. The current first write scope
+is intentionally small: Betriebsart, Raum Soll, and Warmwasser Sollwerte. The
+Warmwasser controls are present but disabled by default. There is no fault
+acknowledge button and no write access to heating-curve parameters, pump
+hand-values, compressor request, EVU/external request, reset counters, or other
+service points.
 
 The default-enabled entity set is intentionally focused on normal observation:
 outside temperature, main flow/return/buffer temperatures, Mischer1 flow
@@ -125,7 +138,10 @@ SCOP Gesamt berechnet = Thermische Energie Gesamt / Elektrische Energie Gesamt
 Example from the `2026-05-19 21:17` read-only snapshot:
 `2016.4 kWh / 375.8 kWh = 5.3656`, displayed by WebMI as `5.4`.
 
-## Safety
+## Write safety
 
-The first version is deliberately read-only. It never calls WebMI `write` and
-does not expose Home Assistant controls that can change heat pump settings.
+By default, the integration does not create write-capable entities. When write
+controls are enabled, every Home Assistant control writes one explicitly mapped
+WebMI address and then requests an immediate readback refresh. The write scope is
+kept deliberately narrow; deeper service and control-loop parameters remain
+read-only until they are understood and tested separately.

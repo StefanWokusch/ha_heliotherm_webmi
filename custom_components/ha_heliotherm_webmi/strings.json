@@ -9,7 +9,8 @@
           "host": "Host",
           "port": "Port",
           "scan_interval": "Fallback polling interval in seconds",
-          "use_subscriptions": "Use WebMI live updates"
+          "use_subscriptions": "Use WebMI live updates",
+          "enable_writes": "Enable WebMI write controls"
         }
       }
     },
@@ -26,7 +27,8 @@
         "title": "Heliotherm WebMI options",
         "data": {
           "scan_interval": "Fallback polling interval in seconds",
-          "use_subscriptions": "Use WebMI live updates"
+          "use_subscriptions": "Use WebMI live updates",
+          "enable_writes": "Enable WebMI write controls"
         }
       }
     }
@@ -316,6 +318,22 @@
       },
       "solarpumpe_status": {
         "name": "Solarpumpe Status"
+      }
+    },
+    "select": {
+      "control_betriebsart": {
+        "name": "Betriebsart setzen"
+      }
+    },
+    "number": {
+      "control_raum_soll": {
+        "name": "Raum Soll"
+      },
+      "control_warmwasser_soll_norm": {
+        "name": "Warmwasser Soll Norm"
+      },
+      "control_warmwasser_soll_min": {
+        "name": "Warmwasser Soll Min"
       }
     }
   }

@@ -64,7 +64,7 @@ class WebMISubscriptionEvent:
 
 
 class HeliothermWebMIClient:
-    """Small read-only WebMI client."""
+    """Small WebMI client."""
 
     def __init__(
         self,
@@ -122,6 +122,16 @@ class HeliothermWebMIClient:
             address: WebMIReadResult.from_payload(item)
             for address, item in zip(unique_addresses, result_items, strict=False)
         }
+
+    async def write_address(self, address: str, value: Any) -> None:
+        """Write one WebMI address."""
+        response = await self._write_addresses_once([address], [value])
+        if self._should_retry_write(response, 1):
+            _LOGGER.debug("WebMI write failed or session expired; recreating session")
+            self.reset_session()
+            response = await self._write_addresses_once([address], [value])
+
+        self._raise_for_invalid_write_response(response, 1)
 
     async def create_subscription(self) -> str:
         """Create a WebMI data subscription and return its id."""
@@ -235,6 +245,23 @@ class HeliothermWebMIClient:
             headers=self._x_webmi_header(),
         )
 
+    async def _write_addresses_once(
+        self,
+        addresses: list[str],
+        values: list[Any],
+    ) -> dict[str, Any]:
+        """Write addresses once with the current or a newly created session."""
+        await self._ensure_session()
+        return await self._post_json(
+            "write",
+            data=[
+                item
+                for address, value in zip(addresses, values, strict=True)
+                for item in (("address[]", address), ("value[]", str(value)))
+            ],
+            headers=self._x_webmi_header(),
+        )
+
     @staticmethod
     def _should_retry_read(response: dict[str, Any], expected_count: int) -> bool:
         """Return whether a read response looks like a stale-session batch."""
@@ -246,6 +273,23 @@ class HeliothermWebMIClient:
         if not isinstance(result_items, list) or len(result_items) != expected_count:
             return True
 
+        if any(item.get("error") == 454 for item in result_items):
+            return True
+
+        return False
+
+    @staticmethod
+    def _should_retry_write(response: dict[str, Any], expected_count: int) -> bool:
+        """Return whether a write response looks like a stale-session batch."""
+        top_error = response.get("error")
+        if top_error not in (None, 0):
+            return True
+
+        result_items = response.get("result")
+        if result_items is None:
+            return False
+        if not isinstance(result_items, list) or len(result_items) != expected_count:
+            return True
         if any(item.get("error") == 454 for item in result_items):
             return True
 
@@ -271,6 +315,36 @@ class HeliothermWebMIClient:
                 "WebMI read returned an incomplete result batch "
                 f"({result_count}/{expected_count} values)"
             )
+
+    @staticmethod
+    def _raise_for_invalid_write_response(
+        response: dict[str, Any],
+        expected_count: int,
+    ) -> None:
+        """Raise when a write response reports failure."""
+        top_error = response.get("error")
+        if top_error not in (None, 0):
+            raise WebMIError(
+                "WebMI write returned top-level error "
+                f"{top_error}: {response.get('errorstring')}"
+            )
+
+        result_items = response.get("result")
+        if result_items is None:
+            return
+        if not isinstance(result_items, list) or len(result_items) != expected_count:
+            result_count = len(result_items) if isinstance(result_items, list) else 0
+            raise WebMIError(
+                "WebMI write returned an incomplete result batch "
+                f"({result_count}/{expected_count} values)"
+            )
+
+        for item in result_items:
+            if isinstance(item, dict) and item.get("error") not in (None, 0):
+                raise WebMIError(
+                    "WebMI write returned item error "
+                    f"{item.get('error')}: {item.get('errorstring')}"
+                )
 
     async def discover_addresses(self) -> list[str]:
         """Discover visible WebMI addresses by crawling the SVG menu tree."""

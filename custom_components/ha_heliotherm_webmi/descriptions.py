@@ -8,11 +8,13 @@ from types import MappingProxyType
 from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorEntityDescription
+from homeassistant.components.number import NumberEntityDescription, NumberMode
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntityDescription,
     SensorStateClass,
 )
+from homeassistant.components.select import SelectEntityDescription
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
@@ -235,6 +237,22 @@ class WebMIBinarySensorEntityDescription(BinarySensorEntityDescription):
 
     address: str
     on_values: frozenset[Any] = frozenset({1, "1", True, "true", "on", "Ein"})
+
+
+@dataclass(frozen=True, kw_only=True)
+class WebMINumberEntityDescription(NumberEntityDescription):
+    """Description for a writable WebMI number."""
+
+    address: str
+    value_fn: Callable[[Any], float | int | None] = number_value
+
+
+@dataclass(frozen=True, kw_only=True)
+class WebMISelectEntityDescription(SelectEntityDescription):
+    """Description for a writable WebMI select."""
+
+    address: str
+    options_by_value: Mapping[int, str]
 
 
 def generated_native_unit(unit: str | None) -> str | None:
@@ -1102,6 +1120,60 @@ STATUS_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
     ),
 )
 
+SELECT_DESCRIPTIONS: tuple[WebMISelectEntityDescription, ...] = (
+    WebMISelectEntityDescription(
+        key="control_betriebsart",
+        translation_key="control_betriebsart",
+        address="webregler/sp/313/value",
+        options_by_value=MappingProxyType(
+            {
+                0: "Aus",
+                1: "Automatik",
+                3: "Sommer",
+                4: "Dauerbetrieb",
+                5: "Absenkbetrieb",
+                6: "Urlaub",
+                7: "Party",
+            }
+        ),
+    ),
+)
+
+NUMBER_DESCRIPTIONS: tuple[WebMINumberEntityDescription, ...] = (
+    WebMINumberEntityDescription(
+        key="control_raum_soll",
+        translation_key="control_raum_soll",
+        address="webregler/sp/3200/value",
+        native_min_value=10,
+        native_max_value=30,
+        native_step=0.5,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        mode=NumberMode.BOX,
+    ),
+    WebMINumberEntityDescription(
+        key="control_warmwasser_soll_norm",
+        translation_key="control_warmwasser_soll_norm",
+        address="webregler/sp/383/value",
+        native_min_value=30,
+        native_max_value=65,
+        native_step=0.5,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        mode=NumberMode.BOX,
+        entity_registry_enabled_default=False,
+    ),
+    WebMINumberEntityDescription(
+        key="control_warmwasser_soll_min",
+        translation_key="control_warmwasser_soll_min",
+        address="webregler/sp/385/value",
+        native_min_value=5,
+        native_max_value=60,
+        native_step=0.5,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        mode=NumberMode.BOX,
+        entity_registry_enabled_default=False,
+    ),
+)
+
 GENERATED_SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = tuple(
     WebMISensorEntityDescription(
         key=point["key"],
@@ -1126,5 +1198,10 @@ SENSOR_DESCRIPTIONS = (
 )
 
 
-ALL_DESCRIPTIONS = SENSOR_DESCRIPTIONS + BINARY_SENSOR_DESCRIPTIONS
+ALL_DESCRIPTIONS = (
+    SENSOR_DESCRIPTIONS
+    + BINARY_SENSOR_DESCRIPTIONS
+    + SELECT_DESCRIPTIONS
+    + NUMBER_DESCRIPTIONS
+)
 DESCRIPTIONS_BY_KEY = {description.key: description for description in ALL_DESCRIPTIONS}
