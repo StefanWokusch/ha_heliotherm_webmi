@@ -17,6 +17,8 @@ from .api import (
     WebMIReadResult,
     WebMISubscriptionEvent,
     WebMITimeout,
+    WebMISessionChanged,
+    WebMISessionError,
 )
 from .descriptions import DESCRIPTIONS_BY_KEY
 
@@ -91,7 +93,9 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
     async def _subscription_loop(self) -> None:
         """Subscribe to WebMI changes and push partial updates into HA."""
         subscription_id: str | None = None
+        subscription_generation: int | None = None
         subscribed_addresses: tuple[str, ...] = ()
+        failures = 0
         try:
             while True:
                 address_to_keys = self._active_address_to_keys()
@@ -101,22 +105,46 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                     await asyncio.sleep(SUBSCRIPTION_RETRY_DELAY_SECONDS)
                     continue
 
-                if subscription_id is None or addresses != subscribed_addresses:
+                if (
+                    subscription_id is None or addresses != subscribed_addresses
+                    or subscription_generation != self.api.session_generation
+                ):
                     if subscription_id is not None:
                         with suppress(WebMIError):
-                            await self.api.delete_subscription(subscription_id)
+                            await self.api.delete_subscription(
+                                subscription_id, expected_generation=subscription_generation,
+                            )
+                    subscription_id = None
+                    subscription_generation = None
                     try:
                         subscription_id = await self.api.create_subscription()
-                        await self.api.subscribe_addresses(subscription_id, addresses)
+                        subscription_generation = self.api.session_generation
+                        await self.api.subscribe_addresses(
+                            subscription_id, addresses,
+                            expected_generation=subscription_generation,
+                        )
+                    except WebMISessionChanged:
+                        subscription_id = None
+                        subscription_generation = None
+                        subscribed_addresses = ()
+                        continue
                     except WebMIError as err:
                         _LOGGER.debug(
                             "Could not create WebMI subscription; retrying: %s",
                             err,
                         )
-                        self.api.reset_session()
+                        if subscription_id is not None:
+                            with suppress(WebMIError):
+                                await self.api.delete_subscription(
+                                    subscription_id, expected_generation=subscription_generation,
+                                )
+                        if isinstance(err, WebMISessionError):
+                            await self.api.async_reset_session(expected_generation=subscription_generation)
                         subscription_id = None
+                        subscription_generation = None
                         subscribed_addresses = ()
-                        await asyncio.sleep(SUBSCRIPTION_RETRY_DELAY_SECONDS)
+                        failures = min(failures + 1, 6)
+                        await asyncio.sleep(min(300, SUBSCRIPTION_RETRY_DELAY_SECONDS * 2 ** (failures - 1)))
                         continue
                     subscribed_addresses = addresses
                     _LOGGER.debug(
@@ -127,20 +155,37 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                 try:
                     events = await self.api.publish_subscription(
                         timeout=PUBLISH_TIMEOUT_SECONDS,
+                        expected_generation=subscription_generation,
                     )
                 except WebMITimeout:
                     continue
+                except WebMISessionChanged:
+                    # Another read/control already replaced the session. Do not
+                    # invalidate that newer session; recreate only the binding.
+                    subscription_id = None
+                    subscription_generation = None
+                    subscribed_addresses = ()
+                    continue
                 except WebMIError as err:
                     _LOGGER.debug(
-                        "WebMI publish subscription failed; recreating session: %s",
+                        "WebMI publish failed; rebuilding subscription: %s",
                         err,
                     )
-                    self.api.reset_session()
+                    if subscription_id is not None:
+                        with suppress(WebMIError):
+                            await self.api.delete_subscription(
+                                subscription_id, expected_generation=subscription_generation,
+                            )
+                    if isinstance(err, WebMISessionError):
+                        await self.api.async_reset_session(expected_generation=subscription_generation)
                     subscription_id = None
+                    subscription_generation = None
                     subscribed_addresses = ()
-                    await asyncio.sleep(SUBSCRIPTION_RETRY_DELAY_SECONDS)
+                    failures = min(failures + 1, 6)
+                    await asyncio.sleep(min(300, SUBSCRIPTION_RETRY_DELAY_SECONDS * 2 ** (failures - 1)))
                     continue
 
+                failures = 0
                 if events:
                     self._apply_subscription_events(events, address_to_keys)
         except asyncio.CancelledError:
@@ -150,7 +195,9 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
         finally:
             if subscription_id is not None:
                 with suppress(WebMIError):
-                    await self.api.delete_subscription(subscription_id)
+                    await self.api.delete_subscription(
+                        subscription_id, expected_generation=subscription_generation,
+                    )
 
     def _apply_subscription_events(
         self,

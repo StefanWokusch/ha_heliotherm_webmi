@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
+from contextlib import suppress
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -11,7 +12,7 @@ from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import HeliothermWebMIClient
+from .api import HeliothermWebMIClient, WebMIError
 from .const import (
     CONF_SCAN_INTERVAL,
     CONF_USE_SUBSCRIPTIONS,
@@ -76,15 +77,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         use_subscriptions=use_subscriptions,
     )
 
-    await coordinator.async_config_entry_first_refresh()
-
-    hass.data[DOMAIN][entry.entry_id] = HeliothermWebMIRuntimeData(
-        api=api,
-        coordinator=coordinator,
-    )
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    coordinator.async_start_subscription()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+        hass.data[DOMAIN][entry.entry_id] = HeliothermWebMIRuntimeData(
+            api=api,
+            coordinator=coordinator,
+        )
+        entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        coordinator.async_start_subscription()
+    except BaseException:
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+        with suppress(WebMIError):
+            await api.async_close()
+        raise
     return True
 
 
@@ -94,7 +100,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         runtime = hass.data[DOMAIN].pop(entry.entry_id)
         await runtime.coordinator.async_stop_subscription()
-        runtime.api.reset_session()
+        await runtime.api.async_close()
     return unload_ok
 
 

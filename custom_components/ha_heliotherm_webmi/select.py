@@ -62,6 +62,12 @@ class HeliothermWebMISelect(HeliothermWebMIEntity, SelectEntity):
             await self.coordinator.api.write_address(
                 self.entity_description.address,
                 value_by_option[option],
+                audit_context={
+                    "entity_id": self.entity_id,
+                    "context_id": getattr(getattr(self, "_context", None), "id", None),
+                    "parent_id": getattr(getattr(self, "_context", None), "parent_id", None),
+                    "user_id": getattr(getattr(self, "_context", None), "user_id", None),
+                },
             )
         except WebMIError as err:
             raise HomeAssistantError(

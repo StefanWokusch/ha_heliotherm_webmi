@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -43,10 +45,18 @@ class HeliothermWebMINumber(HeliothermWebMIEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         """Write a new value to WebMI and refresh the readback."""
+        if not math.isfinite(value) or not self.native_min_value <= value <= self.native_max_value:
+            raise HomeAssistantError("WebMI number is outside its allowed range")
         try:
             await self.coordinator.api.write_address(
                 self.entity_description.address,
                 _write_number(value),
+                audit_context={
+                    "entity_id": self.entity_id,
+                    "context_id": getattr(getattr(self, "_context", None), "id", None),
+                    "parent_id": getattr(getattr(self, "_context", None), "parent_id", None),
+                    "user_id": getattr(getattr(self, "_context", None), "user_id", None),
+                },
             )
         except WebMIError as err:
             raise HomeAssistantError(

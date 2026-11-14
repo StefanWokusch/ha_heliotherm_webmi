@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+import asyncio
 import hashlib
 import json
 import logging
@@ -15,6 +17,8 @@ from urllib.parse import urlparse
 from aiohttp import ClientError, ClientSession, ClientTimeout
 
 _LOGGER = logging.getLogger(__name__)
+_WRITE_LOGGER = logging.getLogger(__name__ + ".write_audit")
+SESSION_ERRORS = {-1, -2, 454, 462}
 
 ADDRESS_RE = re.compile(r"webregler/(?:sp|mp)/\d+/value|mcg/data/[A-Za-z0-9_/]+")
 
@@ -25,6 +29,14 @@ class WebMIError(Exception):
 
 class WebMITimeout(WebMIError):
     """Raised when a WebMI request times out."""
+
+
+class WebMISessionChanged(WebMIError):
+    """An in-flight response belongs to a replaced session."""
+
+
+class WebMISessionError(WebMIError):
+    """The server rejected authentication/session state."""
 
 
 @dataclass(frozen=True)
@@ -80,6 +92,16 @@ class HeliothermWebMIClient:
         self._sessionid: str | None = None
         self._secret: str | None = None
         self._cnonce = 1
+        self._session_generation = 0
+        self._session_lock = asyncio.Lock()
+        self._cleanup_lock = asyncio.Lock()
+        self._retired_sessions: list[dict[str, str]] = []
+        self._closed = False
+
+    @property
+    def session_generation(self) -> int:
+        """Token binding subscriptions to their authenticated session."""
+        return self._session_generation
 
     @property
     def base_url(self) -> str:
@@ -112,7 +134,7 @@ class HeliothermWebMIClient:
         response = await self._read_addresses_once(unique_addresses)
         if self._should_retry_read(response, len(unique_addresses)):
             _LOGGER.debug("WebMI read failed or session expired; recreating session")
-            self.reset_session()
+            await self.async_reset_session()
             response = await self._read_addresses_once(unique_addresses)
 
         self._raise_for_invalid_read_response(response, len(unique_addresses))
@@ -123,24 +145,71 @@ class HeliothermWebMIClient:
             for address, item in zip(unique_addresses, result_items, strict=False)
         }
 
-    async def write_address(self, address: str, value: Any) -> None:
-        """Write one WebMI address."""
-        response = await self._write_addresses_once([address], [value])
-        if self._should_retry_write(response, 1):
-            _LOGGER.debug("WebMI write failed or session expired; recreating session")
-            self.reset_session()
-            response = await self._write_addresses_once([address], [value])
+    async def write_address(
+        self, address: str, value: Any, *, audit_context: dict[str, Any] | None = None
+    ) -> None:
+        """Audit each explicit write attempt, including uncertain outcomes."""
+        request_id = secrets.token_hex(8)
+        context = {
+            key: (audit_context or {}).get(key)
+            for key in ("entity_id", "context_id", "parent_id", "user_id")
+        }
+        for attempt in (1, 2):
+            self._audit_write(request_id, attempt, address, value, context, "attempt")
+            response = None
+            try:
+                response = await self._write_addresses_once([address], [value])
+                if attempt == 1 and self._should_retry_write(response, 1):
+                    self._audit_write(
+                        request_id, attempt, address, value, context,
+                        "session_rejected_retry", error_code=response.get("error"),
+                    )
+                    await self.async_reset_session()
+                    continue
+                self._raise_for_invalid_write_response(response, 1)
+            except asyncio.CancelledError:
+                self._audit_write(request_id, attempt, address, value, context, "cancelled_outcome_unknown")
+                raise
+            except WebMITimeout:
+                self._audit_write(request_id, attempt, address, value, context, "timeout_outcome_unknown")
+                raise
+            except WebMISessionChanged:
+                self._audit_write(request_id, attempt, address, value, context, "session_changed_outcome_unknown")
+                raise
+            except Exception as err:
+                self._audit_write(
+                    request_id, attempt, address, value, context,
+                    "error_outcome_unknown", error_type=type(err).__name__,
+                    error_codes=(
+                        [response.get("error")]
+                        + [item.get("error") for item in (response.get("result") or []) if isinstance(item, dict)]
+                        if isinstance(response, dict) and isinstance(response.get("result", []), list)
+                        else []
+                    ),
+                )
+                raise
+            self._audit_write(request_id, attempt, address, value, context, "acknowledged")
+            return
 
-        self._raise_for_invalid_write_response(response, 1)
+    @staticmethod
+    def _audit_write(request_id, attempt, address, value, context, outcome, **details):
+        # WARNING intentionally retains successful writes in HA's default logs.
+        # Never include response bodies, headers, session IDs, nonces or secrets.
+        record = {
+            "time_utc": datetime.now(timezone.utc).isoformat(),
+            "request_id": request_id, "attempt": attempt,
+            "address": address, "value": value, "outcome": outcome,
+            **context, **details,
+        }
+        _WRITE_LOGGER.warning("WEBMI_WRITE_AUDIT %s", json.dumps(record, ensure_ascii=True))
 
     async def create_subscription(self) -> str:
         """Create a WebMI data subscription and return its id."""
-        await self._ensure_session()
-        response = await self._post_json(
+        response = await self._session_request(
             "createsubscription",
             data={"Persistent": "true"},
-            headers=self._x_webmi_header(),
         )
+        self._raise_for_session_error(response)
         subscription_id = response.get("subscriptionid")
         if not subscription_id:
             raise WebMIError(f"WebMI createsubscription failed: {response}")
@@ -150,18 +219,20 @@ class HeliothermWebMIClient:
         self,
         subscription_id: str,
         addresses: Iterable[str],
+        *, expected_generation: int | None = None,
     ) -> None:
         """Subscribe a WebMI subscription to addresses."""
         unique_addresses = list(dict.fromkeys(addresses))
         if not unique_addresses:
             return
 
-        response = await self._post_json(
+        response = await self._session_request(
             "subscribedata",
             data=[("subscriptionid", subscription_id)]
             + [("address[]", address) for address in unique_addresses],
-            headers=self._x_webmi_header(),
+            expected_generation=expected_generation,
         )
+        self._raise_for_session_error(response)
         top_error = response.get("error")
         if top_error not in (None, 0):
             raise WebMIError(
@@ -187,15 +258,17 @@ class HeliothermWebMIClient:
                 f"{address}: {item.get('error')} {item.get('errorstring')}"
             )
 
-    async def publish_subscription(self, timeout: int = 65) -> list[WebMISubscriptionEvent]:
+    async def publish_subscription(
+        self, timeout: int = 65, *, expected_generation: int | None = None
+    ) -> list[WebMISubscriptionEvent]:
         """Wait for subscribed WebMI value changes."""
-        await self._ensure_session()
-        response = await self._post_json(
+        response = await self._session_request(
             "publish",
             data={"maxresults": "100"},
-            headers=self._x_webmi_header(),
             timeout=ClientTimeout(total=timeout),
+            expected_generation=expected_generation,
         )
+        self._raise_for_session_error(response)
         top_error = response.get("error")
         if top_error not in (None, 0):
             raise WebMIError(
@@ -227,22 +300,24 @@ class HeliothermWebMIClient:
             )
         return events
 
-    async def delete_subscription(self, subscription_id: str) -> None:
+    async def delete_subscription(
+        self, subscription_id: str, *, expected_generation: int | None = None
+    ) -> None:
         """Best-effort delete of a WebMI subscription."""
-        await self._ensure_session()
-        await self._post_json(
+        if not self._sessionid:
+            return
+        response = await self._session_request(
             "deletesubscription",
             data={"subscriptionid": subscription_id},
-            headers=self._x_webmi_header(),
+            expected_generation=expected_generation,
         )
+        self._raise_for_session_error(response)
 
     async def _read_addresses_once(self, addresses: list[str]) -> dict[str, Any]:
         """Read addresses once with the current or a newly created session."""
-        await self._ensure_session()
-        return await self._post_json(
+        return await self._session_request(
             "read",
             data=[("address[]", address) for address in addresses],
-            headers=self._x_webmi_header(),
         )
 
     async def _write_addresses_once(
@@ -251,15 +326,13 @@ class HeliothermWebMIClient:
         values: list[Any],
     ) -> dict[str, Any]:
         """Write addresses once with the current or a newly created session."""
-        await self._ensure_session()
-        return await self._post_json(
+        return await self._session_request(
             "write",
             data=[
                 item
                 for address, value in zip(addresses, values, strict=True)
                 for item in (("address[]", address), ("value[]", str(value)))
             ],
-            headers=self._x_webmi_header(),
         )
 
     @staticmethod
@@ -267,13 +340,13 @@ class HeliothermWebMIClient:
         """Return whether a read response looks like a stale-session batch."""
         top_error = response.get("error")
         if top_error not in (None, 0):
-            return True
+            return top_error in SESSION_ERRORS
 
         result_items = response.get("result")
         if not isinstance(result_items, list) or len(result_items) != expected_count:
-            return True
+            return False
 
-        if any(item.get("error") == 454 for item in result_items):
+        if any(isinstance(item, dict) and item.get("error") in SESSION_ERRORS for item in result_items):
             return True
 
         return False
@@ -283,14 +356,14 @@ class HeliothermWebMIClient:
         """Return whether a write response looks like a stale-session batch."""
         top_error = response.get("error")
         if top_error not in (None, 0):
-            return True
+            return top_error in SESSION_ERRORS
 
         result_items = response.get("result")
         if result_items is None:
             return False
         if not isinstance(result_items, list) or len(result_items) != expected_count:
-            return True
-        if any(item.get("error") == 454 for item in result_items):
+            return False
+        if any(isinstance(item, dict) and item.get("error") in SESSION_ERRORS for item in result_items):
             return True
 
         return False
@@ -331,7 +404,7 @@ class HeliothermWebMIClient:
 
         result_items = response.get("result")
         if result_items is None:
-            return
+            raise WebMIError("WebMI write returned no item acknowledgement")
         if not isinstance(result_items, list) or len(result_items) != expected_count:
             result_count = len(result_items) if isinstance(result_items, list) else 0
             raise WebMIError(
@@ -340,6 +413,8 @@ class HeliothermWebMIClient:
             )
 
         for item in result_items:
+            if not isinstance(item, dict) or item.get("error") is None:
+                raise WebMIError("WebMI write returned an invalid item acknowledgement")
             if isinstance(item, dict) and item.get("error") not in (None, 0):
                 raise WebMIError(
                     "WebMI write returned item error "
@@ -364,39 +439,107 @@ class HeliothermWebMIClient:
         return sorted(addresses)
 
     def reset_session(self) -> None:
-        """Forget the local WebMI session."""
+        """Invalidate locally and retain old credentials only for cleanup."""
+        if self._sessionid and self._secret:
+            self._retired_sessions.append(self._x_webmi_header())
         self._sessionid = None
         self._secret = None
         self._cnonce = 1
+        self._session_generation += 1
+
+    async def async_reset_session(self, *, expected_generation: int | None = None) -> None:
+        """Retire this generation without invalidating a newer session."""
+        if expected_generation is None or expected_generation == self._session_generation:
+            self.reset_session()
+        await self._cleanup_retired_sessions()
+
+    async def _cleanup_retired_sessions(self) -> None:
+        async with self._cleanup_lock:
+            while self._retired_sessions:
+                headers = self._retired_sessions.pop(0)
+                try:
+                    response = await self._post_json(
+                        "deletesession", headers=headers, timeout=ClientTimeout(total=5),
+                    )
+                    if response.get("error") not in (None, 0) or any(
+                        isinstance(item, dict) and item.get("error") not in (None, 0)
+                        for item in (response.get("result") or [])
+                    ):
+                        _LOGGER.warning("WebMI session cleanup rejected; server expiry may be needed")
+                except asyncio.CancelledError:
+                    self._retired_sessions.insert(0, headers)
+                    raise
+                except WebMIError:
+                    _LOGGER.warning("Could not retire WebMI session; server expiry may be needed")
+
+    async def async_close(self) -> None:
+        """Stop future requests and retire sessions, including an in-flight creation."""
+        self._closed = True
+        self.reset_session()
+        async with self._session_lock:
+            await self._cleanup_retired_sessions()
 
     async def _ensure_session(self) -> None:
-        if self._sessionid and self._secret:
-            return
+        async with self._session_lock:
+            if self._closed:
+                raise WebMIError("WebMI client is closed")
+            while not (self._sessionid and self._secret):
+                if self._closed:
+                    raise WebMIError("WebMI client is closed")
+                await self._cleanup_retired_sessions()
+                if self._closed:
+                    raise WebMIError("WebMI client is closed")
+                generation = self._session_generation
+                info = await self.info()
+                modulus = int(info["encryptionmodulus"], 16)
+                exponent = int(info["encryptionexponent"], 16)
+                secret = "".join(secrets.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(16))
+                response = await self._post_json(
+                    "createsession",
+                    data={"cipher": self._rsa_pkcs1_v15_encrypt(secret, modulus, exponent)},
+                )
+                session_id = response["sessionid"]
+                if generation != self._session_generation:
+                    self._retired_sessions.append(self._make_header(session_id, secret, 2))
+                    continue
+                self._sessionid = session_id
+                self._secret = secret
+                self._cnonce = 1
+                self._session_generation += 1
 
-        info = await self.info()
-        modulus = int(info["encryptionmodulus"], 16)
-        exponent = int(info["encryptionexponent"], 16)
-        secret = "".join(secrets.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(16))
+    async def _session_request(self, command, data=None, timeout=None, expected_generation=None):
+        await self._ensure_session()
+        generation = self._session_generation
+        if expected_generation is not None and expected_generation != generation:
+            raise WebMISessionChanged("WebMI subscription session changed")
         response = await self._post_json(
-            "createsession",
-            data={"cipher": self._rsa_pkcs1_v15_encrypt(secret, modulus, exponent)},
+            command, data=data, headers=self._x_webmi_header(), timeout=timeout,
         )
-        self._sessionid = response["sessionid"]
-        self._secret = secret
-        self._cnonce = 1
+        if generation != self._session_generation:
+            raise WebMISessionChanged("Discarded response from retired WebMI session")
+        return response
+
+    @staticmethod
+    def _raise_for_session_error(response):
+        if response.get("error") in SESSION_ERRORS:
+            raise WebMISessionError("WebMI rejected session/authentication")
 
     def _x_webmi_header(self) -> dict[str, str]:
         if not self._sessionid or not self._secret:
             raise WebMIError("WebMI session is not initialized")
 
         self._cnonce += 1
+        return self._make_header(self._sessionid, self._secret, self._cnonce)
+
+    @staticmethod
+    def _make_header(session_id: str, secret: str, nonce: int) -> dict[str, str]:
         digest = hashlib.md5(
-            f"{self._sessionid}:{self._secret}:{self._cnonce}".encode()
+            f"{session_id}:{secret}:{nonce}".encode()
         ).hexdigest()
         return {
             "X-WebMI": (
-                f'sessionid="{self._sessionid}", '
-                f'cnonce="{self._cnonce}", '
+                f'sessionid="{session_id}", '
+                f'cnonce="{nonce}", '
                 f'digest="{digest}"'
             )
         }
