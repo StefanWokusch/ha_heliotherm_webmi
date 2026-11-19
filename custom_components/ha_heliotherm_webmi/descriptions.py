@@ -101,8 +101,9 @@ def pump_state(value: Any) -> str | None:
     numeric = number_value(value)
     return {
         0: "off",
-        1: "on",
+        1: "saving_pulse",
         2: "pulse",
+        3: "continuous",
     }.get(numeric, optional_text(value))
 
 
@@ -134,79 +135,10 @@ def demand_mode(value: Any) -> str | None:
     }.get(numeric, optional_text(value))
 
 
-def heating_curve_setpoint(
-    outside_temp: float,
-    heating_limit: float,
-    setpoint_at_limit: float,
-    setpoint_at_zero: float,
-    setpoint_at_minus_15: float,
-    offset: float,
-) -> float:
-    """Calculate a Heliotherm heating-curve setpoint."""
-    if outside_temp >= heating_limit:
-        setpoint = setpoint_at_limit
-    elif outside_temp >= 0:
-        setpoint = setpoint_at_limit + (
-            (heating_limit - outside_temp)
-            * (setpoint_at_zero - setpoint_at_limit)
-            / heating_limit
-        )
-    elif outside_temp >= -15:
-        setpoint = setpoint_at_zero + (
-            (0 - outside_temp)
-            * (setpoint_at_minus_15 - setpoint_at_zero)
-            / 15
-        )
-    else:
-        setpoint = setpoint_at_minus_15
-
-    return round(setpoint + offset, 1)
 
 
-def calculated_hkr_ruecklauf_soll(values: dict[str, Any]) -> float | None:
-    """Calculate the heat-pump return setpoint from the HKR curve."""
-    required = (
-        "aussentemperatur_verzoegert",
-        "hkr_heizgrenze",
-        "hkr_ruecklaufsoll_bei_heizgrenze",
-        "hkr_ruecklaufsoll_bei_0c",
-        "hkr_ruecklaufsoll_bei_minus_15c",
-        "hkr_aufheiztemp",
-    )
-    if any(not isinstance(values.get(key), int | float) for key in required):
-        return None
-
-    return heating_curve_setpoint(
-        values["aussentemperatur_verzoegert"],
-        values["hkr_heizgrenze"],
-        values["hkr_ruecklaufsoll_bei_heizgrenze"],
-        values["hkr_ruecklaufsoll_bei_0c"],
-        values["hkr_ruecklaufsoll_bei_minus_15c"],
-        values["hkr_aufheiztemp"],
-    )
 
 
-def calculated_mischer1_soll(values: dict[str, Any]) -> float | None:
-    """Calculate the Mischer1 heating-circuit setpoint from its curve."""
-    required = (
-        "aussentemperatur_verzoegert",
-        "mischer1_heizgrenze",
-        "mischer1_ruecklaufsoll_bei_heizgrenze",
-        "mischer1_ruecklaufsoll_bei_0c",
-        "mischer1_ruecklaufsoll_bei_minus_15c",
-        "mischer1_aufheiztemp",
-    )
-    if any(not isinstance(values.get(key), int | float) for key in required):
-        return None
-
-    return heating_curve_setpoint(
-        values["aussentemperatur_verzoegert"],
-        values["mischer1_heizgrenze"],
-        values["mischer1_ruecklaufsoll_bei_heizgrenze"],
-        values["mischer1_ruecklaufsoll_bei_0c"],
-        values["mischer1_ruecklaufsoll_bei_minus_15c"],
-        values["mischer1_aufheiztemp"],
-    )
 
 
 def calculated_scop_gesamt(values: dict[str, Any]) -> float | None:
@@ -259,6 +191,7 @@ def generated_native_unit(unit: str | None) -> str | None:
     """Map generated catalogue unit keys to Home Assistant units."""
     return {
         "bar": "bar",
+        "K": "K",
         "celsius": UnitOfTemperature.CELSIUS,
         "h": UnitOfTime.HOURS,
         "kwh": UnitOfEnergy.KILO_WATT_HOUR,
@@ -297,6 +230,24 @@ def generated_entity_category(point: Mapping[str, Any]) -> EntityCategory | None
 
 
 SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
+    WebMISensorEntityDescription(
+        key="heizen_soll",
+        translation_key="heizen_soll",
+        address="webregler/mp/257/value",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="mischer1_soll",
+        translation_key="mischer1_soll",
+        address="webregler/mp/266/value",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=number_value,
+    ),
     WebMISensorEntityDescription(
         key="mischer1_heizgrenze",
         translation_key="mischer1_heizgrenze",
@@ -396,59 +347,13 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
-        key="ruecklauf_soll_berechnet",
-        translation_key="ruecklauf_soll_berechnet",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        dependencies=(
-            "aussentemperatur_verzoegert",
-            "hkr_heizgrenze",
-            "hkr_ruecklaufsoll_bei_heizgrenze",
-            "hkr_ruecklaufsoll_bei_0c",
-            "hkr_ruecklaufsoll_bei_minus_15c",
-            "hkr_aufheiztemp",
-        ),
-        calculate_fn=calculated_hkr_ruecklauf_soll,
-        calculation_attributes=MappingProxyType(
-            {
-                "source": "calculated",
-                "note": "Not directly read from WebMI; derived from the HKR heating curve.",
-                "formula": "curve(Aussentemperatur verzoegert, HKR points) + HKR Aufheiztemp",
-            }
-        ),
-    ),
-    WebMISensorEntityDescription(
-        key="heizkreis_soll_berechnet",
-        translation_key="heizkreis_soll_berechnet",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        dependencies=(
-            "aussentemperatur_verzoegert",
-            "mischer1_heizgrenze",
-            "mischer1_ruecklaufsoll_bei_heizgrenze",
-            "mischer1_ruecklaufsoll_bei_0c",
-            "mischer1_ruecklaufsoll_bei_minus_15c",
-            "mischer1_aufheiztemp",
-        ),
-        calculate_fn=calculated_mischer1_soll,
-        calculation_attributes=MappingProxyType(
-            {
-                "source": "calculated",
-                "note": "Not directly read from WebMI; derived from the Mischer1 heating curve.",
-                "formula": "curve(Aussentemperatur verzoegert, Mischer1 points) + Mischer1 Aufheiztemp",
-            }
-        ),
-    ),
-    WebMISensorEntityDescription(
         key="hkpa01_istwert",
         translation_key="hkpa01_istwert",
         address="webregler/mp/247/value",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
+        entity_registry_enabled_default=True,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -483,7 +388,7 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         address="webregler/mp/2105/value",
         native_unit_of_measurement="l/min",
         state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
+        entity_registry_enabled_default=True,
         value_fn=number_value,
     ),
     WebMISensorEntityDescription(
@@ -558,6 +463,28 @@ SENSOR_DESCRIPTIONS: tuple[WebMISensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=optional_text,
+    ),
+)
+
+
+# Optional actuator diagnostics, proven by the 2026-11-19 full snapshot.
+SENSOR_DESCRIPTIONS += (
+    WebMISensorEntityDescription(
+        key="hkpa01_handwert",
+        translation_key="hkpa01_handwert",
+        address="webregler/mp/247/handVal",
+        native_unit_of_measurement=PERCENTAGE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=number_value,
+    ),
+    WebMISensorEntityDescription(
+        key="mischer1_pumpe_handwert",
+        translation_key="mischer1_pumpe_handwert",
+        address="webregler/mp/265/handVal",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=on_off,
     ),
 )
 
@@ -652,6 +579,24 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[WebMIBinarySensorEntityDescription, ...] = (
         key="heizkreispumpe_ext_anf_abhaengig",
         translation_key="heizkreispumpe_ext_anf_abhaengig",
         address="webregler/sp/3388/value",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+)
+
+
+BINARY_SENSOR_DESCRIPTIONS += (
+    WebMIBinarySensorEntityDescription(
+        key="hkpa01_handbetrieb",
+        translation_key="hkpa01_handbetrieb",
+        address="webregler/mp/247/handAkt",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    WebMIBinarySensorEntityDescription(
+        key="mischer1_pumpe_handbetrieb",
+        translation_key="mischer1_pumpe_handbetrieb",
+        address="webregler/mp/265/handAkt",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.31 — 2026-11-19
+
+- Read heating/buffer and mixer 1 targets directly from MP257 and MP266; remove both calculated target entities and their curve approximations.
+- Correct pump, mixer, Vortex and energy labels, diagnostic units and the heating-pump mode enumeration while preserving existing entity keys and addresses.
+- Add four optional read-only hand-mode/hand-value diagnostics for AO1 and the mixer 1 pump.
+- Enable AO1 output and Vortex 2 flow by default for new registrations; keep unused domestic-hot-water, solar and mixer 2 diagnostics disabled by default.
+- Keep schedules outside the normal entity set and preserve the existing transport and write-control scope.
+
+Migration: Replace dashboard references to `ruecklauf_soll_berechnet` and `heizkreis_soll_berechnet` with the native controller targets. Existing entity-registry enable/disable choices remain unchanged.
+
+Validation: 23 network-free tests pass. No live Home Assistant installation or controller configuration change was performed for this release.
+
 ## 0.1.30 — 2026-11-14
 
 - Serialize session initialization and bind subscriptions to their session generation.

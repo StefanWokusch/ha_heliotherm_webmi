@@ -54,49 +54,49 @@
         "name": "HKR Aufheiztemp"
       },
       "mischer1_ruecklaufsoll_bei_heizgrenze": {
-        "name": "Mischer1 Ruecklaufsoll Heizgrenze"
+        "name": "Mischer1 Vorlauf-Kurvenpunkt Heizgrenze"
       },
       "mischer1_ruecklaufsoll_bei_0c": {
-        "name": "Mischer1 Ruecklaufsoll 0C"
+        "name": "Mischer1 Vorlauf-Kurvenpunkt 0C"
       },
       "mischer1_ruecklaufsoll_bei_minus_15c": {
-        "name": "Mischer1 Ruecklaufsoll -15C"
+        "name": "Mischer1 Vorlauf-Kurvenpunkt -15C"
       },
       "mischer1_aufheiztemp": {
         "name": "Mischer1 Aufheiztemp"
       },
-      "ruecklauf_soll_berechnet": {
-        "name": "Ruecklauf Soll berechnet"
+      "heizen_soll": {
+        "name": "Heizen / Puffer Soll (Regler)"
       },
-      "heizkreis_soll_berechnet": {
-        "name": "Heizkreis Soll berechnet"
+      "mischer1_soll": {
+        "name": "Mischer1 Vorlauf Soll (Regler)"
       },
       "hkpa01_istwert": {
-        "name": "HKPA01 Analogausgang"
+        "name": "Heizkreispumpe/Pufferpumpe AO1 Ansteuerung"
       },
       "mischer_betrieb": {
-        "name": "Mischer Betrieb"
+        "name": "Mischer1 Stellvorgabe"
       },
       "mischer_sollpos": {
         "name": "Mischer Sollposition Zeit"
       },
       "vortex_flow_1": {
-        "name": "Vortex Flow 1"
+        "name": "Vortex1 Durchfluss"
       },
       "vortex_flow_2": {
-        "name": "Vortex Flow 2"
+        "name": "WP Durchfluss Vortex2"
       },
       "heizkreispumpe_modus": {
-        "name": "Heizkreispumpe Modus"
+        "name": "Heizkreispumpe EVU-Sperre (Einstellung)"
       },
       "heizkreispumpe_zustand": {
-        "name": "Heizkreispumpe Zustand"
+        "name": "Heizkreispumpe Betriebsmodus"
       },
       "vortex_type_1": {
-        "name": "Vortex Type 1"
+        "name": "Vortex1 Sensortyp"
       },
       "vortex_type_2": {
-        "name": "Vortex Type 2"
+        "name": "Vortex2 Sensortyp"
       },
       "pv_power": {
         "name": "PV Power"
@@ -114,10 +114,10 @@
         "name": "Brauchwasser Temperatur"
       },
       "vorlauf_temperatur": {
-        "name": "Vorlauf Temperatur"
+        "name": "Waermepumpe Vorlauf"
       },
       "ruecklauf_temperatur": {
-        "name": "Ruecklauf Temperatur"
+        "name": "Waermepumpe Ruecklauf"
       },
       "pufferspeicher_temperatur": {
         "name": "Pufferspeicher Temperatur"
@@ -186,10 +186,10 @@
         "name": "Elektrische Aufnahmeleistung"
       },
       "cop_gesamt": {
-        "name": "COP Gesamt"
+        "name": "COP aktuell (Regler)"
       },
       "scop_gesamt_berechnet": {
-        "name": "SCOP Gesamt berechnet"
+        "name": "Arbeitszahl Gesamt (Zaehler)"
       },
       "thermische_energie_gesamt": {
         "name": "Thermische Energie Gesamt"
@@ -234,13 +234,13 @@
         "name": "VDMod Status"
       },
       "expansionsventil_istwert": {
-        "name": "Expansionsventil Istwert"
+        "name": "Expansionsventil Stellvorgabe"
       },
       "mischer2_betrieb": {
         "name": "Mischer2 Betrieb"
       },
       "eqa02_istwert": {
-        "name": "EQ Luefter Istwert"
+        "name": "EQ-Pumpe/Ventilator AO2 Ansteuerung"
       },
       "fehlerlog": {
         "name": "Fehlerlog"
@@ -265,6 +265,12 @@
       },
       "heizstab_betrieb": {
         "name": "Heizstab Betrieb"
+      },
+      "hkpa01_handwert": {
+        "name": "Heizkreispumpe/Pufferpumpe AO1 Handwert"
+      },
+      "mischer1_pumpe_handwert": {
+        "name": "Mischer1 Pumpe Handvorgabe"
       }
     },
     "binary_sensor": {
@@ -272,28 +278,28 @@
         "name": "FU Soll Extern"
       },
       "heizkreispumpe_service_ein": {
-        "name": "Heizkreispumpe WP Ausgang"
+        "name": "Heizkreispumpe Ein/Aus-Signal"
       },
       "mischerpumpe_zustand": {
-        "name": "Mischerpumpe"
+        "name": "Mischer1 Pumpe Ein/Aus-Signal"
       },
       "heizkreispumpe_ext_anf_abhaengig": {
-        "name": "Heizkreispumpe Ext Anf Abhaengig"
+        "name": "Heizkreispumpe Kuehlen (Einstellung)"
       },
       "pufferpumpe_handwert": {
-        "name": "Pufferpumpe Handwert"
+        "name": "Pufferpumpe Ein/Aus-Signal"
       },
       "eq_pumpe_zustand": {
         "name": "EQ Pumpe Zustand"
       },
       "brauchwasserpumpe_handwert": {
-        "name": "Brauchwasserpumpe Handwert"
+        "name": "Brauchwasserpumpe Ein/Aus-Signal"
       },
       "umv_kuehlen_ein": {
         "name": "UMV Kuehlen Ein"
       },
       "externe_pumpe_handwert": {
-        "name": "Externe Pumpe Handwert"
+        "name": "Externe Pumpe Ein/Aus-Signal"
       },
       "zirkpumpe_zustand": {
         "name": "Zirkpumpe Zustand"
@@ -324,6 +330,12 @@
       },
       "solarpumpe_status": {
         "name": "Solarpumpe Status"
+      },
+      "hkpa01_handbetrieb": {
+        "name": "Heizkreispumpe/Pufferpumpe AO1 Handbetrieb aktiv"
+      },
+      "mischer1_pumpe_handbetrieb": {
+        "name": "Mischer1 Pumpe Handbetrieb aktiv"
       }
     },
     "select": {
