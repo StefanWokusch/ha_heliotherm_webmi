@@ -129,9 +129,10 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                         subscribed_addresses = ()
                         continue
                     except WebMIError as err:
-                        _LOGGER.debug(
-                            "Could not create WebMI subscription; retrying: %s",
-                            err,
+                        _LOGGER.warning(
+                            "WebMI subscription %s failed (%s); retrying",
+                            "registration" if subscription_id is not None else "setup",
+                            type(err).__name__,
                         )
                         if subscription_id is not None:
                             with suppress(WebMIError):
@@ -167,9 +168,8 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                     subscribed_addresses = ()
                     continue
                 except WebMIError as err:
-                    _LOGGER.debug(
-                        "WebMI publish failed; rebuilding subscription: %s",
-                        err,
+                    _LOGGER.warning(
+                        "WebMI publish failed (%s); rebuilding subscription", type(err).__name__
                     )
                     if subscription_id is not None:
                         with suppress(WebMIError):
@@ -185,6 +185,8 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                     await asyncio.sleep(min(300, SUBSCRIPTION_RETRY_DELAY_SECONDS * 2 ** (failures - 1)))
                     continue
 
+                if failures:
+                    _LOGGER.warning("WebMI subscription recovered; publish succeeded after retry")
                 failures = 0
                 if events:
                     self._apply_subscription_events(events, address_to_keys)

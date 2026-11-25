@@ -95,6 +95,50 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         await asyncio.gather(*(c._ensure_session() for _ in range(20)))
         self.assertEqual(c.calls.count('createsession'), 1)
 
+    async def test_lifecycle_failure_messages_identify_operation_and_hide_server_data(self):
+        c = self.client()
+        await c._ensure_session()
+        async def reply(command, **kwargs):
+            if command == 'deletesubscription':
+                return {'result': [{'error': 301, 'errorstring': 'private-body'}]}
+            return {'detail': 'private-body'}
+        c._post_json = reply
+        with self.assertLogs(api['_LOGGER'], 'WARNING') as logs:
+            with self.assertRaises(Error):
+                await c.create_subscription()
+            with self.assertRaises(Error):
+                await c.delete_subscription('private-subscription')
+        messages = '\n'.join(logs.output)
+        self.assertIn('createsubscription not confirmed (missing ID', messages)
+        self.assertIn('deletesubscription not confirmed (controller error 301)', messages)
+        for private in ('private-body', 'private-subscription', c._sessionid, c._secret):
+            self.assertNotIn(private, messages)
+
+    async def test_lifecycle_timeout_and_ambiguous_cleanup_warn(self):
+        c = self.client()
+        await c._ensure_session()
+        async def reply(command, **kwargs):
+            if command == 'createsubscription':
+                raise api['WebMITimeout']('private transport detail')
+            return {}
+        c._post_json = reply
+        with self.assertLogs(api['_LOGGER'], 'WARNING') as logs:
+            with self.assertRaises(api['WebMITimeout']):
+                await c.create_subscription()
+            await c.async_close()
+        self.assertIn('createsubscription not confirmed (WebMITimeout)', logs.output[0])
+        self.assertIn('deletesession returned without explicit cleanup confirmation', logs.output[1])
+        self.assertNotIn('private transport detail', str(logs.output))
+
+    async def test_confirmed_lifecycle_uses_debug(self):
+        c = self.client()
+        with self.assertLogs(api['_LOGGER'], 'DEBUG') as logs:
+            await c._ensure_session()
+            await c.async_close()
+        self.assertEqual([record.levelname for record in logs.records], ['DEBUG', 'DEBUG'])
+        self.assertIn('createsession', logs.output[0])
+        self.assertIn('deletesession', logs.output[1])
+
     async def test_stale_inflight_read_is_discarded(self):
         c = self.client(); await c._ensure_session()
         started, release = asyncio.Event(), asyncio.Event(); original = c._post_json

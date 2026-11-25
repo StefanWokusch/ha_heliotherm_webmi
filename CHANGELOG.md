@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.33 — 2026-11-25
+
+- Report unconfirmed session and subscription creation or cleanup, subscription retries and recovery in the standard HA log. Successful lifecycle requests are logged at debug level. Routine long-poll timeouts remain quiet.
+
 ## 0.1.32 — 2026-11-25
 
 - Add a heating room target control for SP369, adjustable from 10 to 25 °C in 0.5 °C steps. The existing mixer 1 room target uses SP3200.

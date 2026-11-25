@@ -133,7 +133,7 @@ class HeliothermWebMIClient:
 
         response = await self._read_addresses_once(unique_addresses)
         if self._should_retry_read(response, len(unique_addresses)):
-            _LOGGER.debug("WebMI read failed or session expired; recreating session")
+            _LOGGER.warning("WebMI read rejected for session generation %d; reconnecting", self.session_generation)
             await self.async_reset_session()
             response = await self._read_addresses_once(unique_addresses)
 
@@ -209,11 +209,7 @@ class HeliothermWebMIClient:
             "createsubscription",
             data={"Persistent": "true"},
         )
-        self._raise_for_session_error(response)
-        subscription_id = response.get("subscriptionid")
-        if not subscription_id:
-            raise WebMIError(f"WebMI createsubscription failed: {response}")
-        return str(subscription_id)
+        return str(response["subscriptionid"])
 
     async def subscribe_addresses(
         self,
@@ -306,12 +302,11 @@ class HeliothermWebMIClient:
         """Best-effort delete of a WebMI subscription."""
         if not self._sessionid:
             return
-        response = await self._session_request(
+        await self._session_request(
             "deletesubscription",
             data={"subscriptionid": subscription_id},
             expected_generation=expected_generation,
         )
-        self._raise_for_session_error(response)
 
     async def _read_addresses_once(self, addresses: list[str]) -> dict[str, Any]:
         """Read addresses once with the current or a newly created session."""
@@ -458,19 +453,15 @@ class HeliothermWebMIClient:
             while self._retired_sessions:
                 headers = self._retired_sessions.pop(0)
                 try:
-                    response = await self._post_json(
+                    await self._post_lifecycle(
                         "deletesession", headers=headers, timeout=ClientTimeout(total=5),
                     )
-                    if response.get("error") not in (None, 0) or any(
-                        isinstance(item, dict) and item.get("error") not in (None, 0)
-                        for item in (response.get("result") or [])
-                    ):
-                        _LOGGER.warning("WebMI session cleanup rejected; server expiry may be needed")
                 except asyncio.CancelledError:
                     self._retired_sessions.insert(0, headers)
                     raise
                 except WebMIError:
-                    _LOGGER.warning("Could not retire WebMI session; server expiry may be needed")
+                    # _post_lifecycle has logged the unconfirmed cleanup.
+                    continue
 
     async def async_close(self) -> None:
         """Stop future requests and retire sessions, including an in-flight creation."""
@@ -494,7 +485,7 @@ class HeliothermWebMIClient:
                 modulus = int(info["encryptionmodulus"], 16)
                 exponent = int(info["encryptionexponent"], 16)
                 secret = "".join(secrets.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(16))
-                response = await self._post_json(
+                response = await self._post_lifecycle(
                     "createsession",
                     data={"cipher": self._rsa_pkcs1_v15_encrypt(secret, modulus, exponent)},
                 )
@@ -512,10 +503,13 @@ class HeliothermWebMIClient:
         generation = self._session_generation
         if expected_generation is not None and expected_generation != generation:
             raise WebMISessionChanged("WebMI subscription session changed")
-        response = await self._post_json(
+        post = self._post_lifecycle if command in {"createsubscription", "deletesubscription"} else self._post_json
+        response = await post(
             command, data=data, headers=self._x_webmi_header(), timeout=timeout,
         )
         if generation != self._session_generation:
+            if command == "createsubscription":
+                _LOGGER.warning("WebMI subscription created during session change; cleanup depends on the retired session")
             raise WebMISessionChanged("Discarded response from retired WebMI session")
         return response
 
@@ -523,6 +517,39 @@ class HeliothermWebMIClient:
     def _raise_for_session_error(response):
         if response.get("error") in SESSION_ERRORS:
             raise WebMISessionError("WebMI rejected session/authentication")
+
+    async def _post_lifecycle(self, command: str, **kwargs: Any) -> dict[str, Any]:
+        """Log session and subscription outcomes without server IDs or payloads."""
+        reason = None
+        try:
+            response = await self._post_json(command, **kwargs)
+            if not isinstance(response, dict):
+                reason = "invalid response"
+                raise WebMIError("Invalid lifecycle response")
+            items = response.get("result", [])
+            if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
+                reason = "invalid result"
+                raise WebMIError("Invalid lifecycle result")
+            errors = [response.get("error"), *(item.get("error") for item in items)]
+            for error in errors:
+                if error not in (None, 0):
+                    code = error if type(error) is int else "invalid"
+                    reason = f"controller error {code}"
+                    if type(error) is int and error in SESSION_ERRORS:
+                        raise WebMISessionError("Controller rejected session")
+                    raise WebMIError("Controller rejected lifecycle operation")
+            id_field = {"createsession": "sessionid", "createsubscription": "subscriptionid"}.get(command)
+            if id_field and not response.get(id_field):
+                reason = "missing ID in reply"
+                raise WebMIError("Missing ID in lifecycle response")
+            if not id_field and 0 not in errors:
+                _LOGGER.warning("WebMI %s returned without explicit cleanup confirmation", command)
+                return response
+        except (WebMIError, asyncio.CancelledError) as err:
+            _LOGGER.warning("WebMI %s not confirmed (%s); controller state unverified", command, reason or type(err).__name__)
+            raise
+        _LOGGER.debug("WebMI %s returned successfully", command)
+        return response
 
     def _x_webmi_header(self) -> dict[str, str]:
         if not self._sessionid or not self._secret:
