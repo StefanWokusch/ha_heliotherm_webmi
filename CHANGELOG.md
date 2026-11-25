@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.32 — 2026-11-25
+
+- Add a heating room target control for SP369, adjustable from 10 to 25 °C in 0.5 °C steps. The existing mixer 1 room target uses SP3200.
+
 ## 0.1.31 — 2026-11-19
 
 - Read heating/buffer and mixer 1 targets directly from MP257 and MP266; remove both calculated target entities and their curve approximations.

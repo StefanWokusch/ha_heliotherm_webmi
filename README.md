@@ -36,7 +36,7 @@ stay read-only.
 - Home Assistant diagnostics download with an on-demand full WebMI snapshot
 - Write controls for a small user-facing set:
   - Operating mode (`Betriebsart setzen`)
-  - Room temperature target (`Raum Soll`)
+  - Heating room target (`Raum Soll Heizung`, SP369) and mixer 1 room target (`Raum Soll`, SP3200)
   - Normal domestic hot water target (`Warmwasser Soll Norm`)
   - Minimum domestic hot water target (`Warmwasser Soll Min`)
 - No Modbus dependency

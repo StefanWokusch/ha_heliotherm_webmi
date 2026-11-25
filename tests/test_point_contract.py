@@ -31,6 +31,14 @@ POINTS=D['DESCRIPTIONS_BY_KEY']
 Sensor=load('sensor.py',{'SensorEntity':EntityStub,'HeliothermWebMIEntity':type('Base',(),{}),'SENSOR_DESCRIPTIONS':D['SENSOR_DESCRIPTIONS'],'DESCRIPTIONS_BY_KEY':POINTS})['HeliothermWebMISensor']
 
 class PointContract(unittest.TestCase):
+    def test_heating_room_control_uses_its_own_address_and_ui_limits(self):
+        heating = POINTS['control_raum_soll_heizung']
+        self.assertIn(heating, D['NUMBER_DESCRIPTIONS'])
+        self.assertEqual(heating.address, POINTS['diag_sp_369'].address)
+        self.assertEqual(heating.address, 'webregler/sp/369/value')
+        self.assertEqual((heating.native_min_value, heating.native_max_value, heating.native_step), (10, 25, 0.5))
+        self.assertEqual(POINTS['control_raum_soll'].address, 'webregler/sp/3200/value')
+
     def test_native_targets_are_direct_and_independent_of_curve(self):
         for key,address,v in [('heizen_soll','webregler/mp/257/value',38.9),('mischer1_soll','webregler/mp/266/value',42.9)]:
             d=POINTS[key];self.assertEqual(d.address,address);self.assertIsNone(d.calculate_fn)

@@ -1102,6 +1102,16 @@ SELECT_DESCRIPTIONS: tuple[WebMISelectEntityDescription, ...] = (
 
 NUMBER_DESCRIPTIONS: tuple[WebMINumberEntityDescription, ...] = (
     WebMINumberEntityDescription(
+        key="control_raum_soll_heizung",
+        translation_key="control_raum_soll_heizung",
+        address="webregler/sp/369/value",
+        native_min_value=10,
+        native_max_value=25,
+        native_step=0.5,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        mode=NumberMode.BOX,
+    ),
+    WebMINumberEntityDescription(
         key="control_raum_soll",
         translation_key="control_raum_soll",
         address="webregler/sp/3200/value",

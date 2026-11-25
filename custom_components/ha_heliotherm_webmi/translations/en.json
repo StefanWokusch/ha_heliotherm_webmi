@@ -344,6 +344,9 @@
       }
     },
     "number": {
+      "control_raum_soll_heizung": {
+        "name": "Raum Soll Heizung"
+      },
       "control_raum_soll": {
         "name": "Raum Soll"
       },
