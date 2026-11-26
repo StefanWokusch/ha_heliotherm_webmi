@@ -19,6 +19,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up WebMI binary sensors."""
     coordinator = hass.data[DOMAIN][entry.entry_id].coordinator
+    if coordinator.minimal_monitoring:
+        return
     async_add_entities(
         HeliothermWebMIBinarySensor(coordinator, entry, description)
         for description in BINARY_SENSOR_DESCRIPTIONS

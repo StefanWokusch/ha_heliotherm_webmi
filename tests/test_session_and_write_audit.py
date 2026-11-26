@@ -217,6 +217,20 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         headers = [c._x_webmi_header()['X-WebMI'] for _ in range(1000)]
         self.assertEqual(len(set(headers)), 1000)
 
+    async def test_transport_failure_logs_command_and_generation_only(self):
+        class BrokenConnection:
+            def post(self, *args, **kwargs):
+                raise OSError('private transport detail')
+        c = Client(BrokenConnection(), 'offline.invalid')
+        with self.assertLogs(api['_LOGGER'], 'DEBUG') as logs:
+            with self.assertRaises(Error):
+                await c._post_json('publish', headers={'X-WebMI': 'private header'})
+        message = ' '.join(logs.output)
+        self.assertIn('publish failed', message)
+        self.assertIn('generation 0', message)
+        self.assertIn('OSError', message)
+        self.assertNotIn('private', message)
+
     async def test_old_binding_cannot_publish_in_new_session(self):
         c = self.client(); await c._ensure_session(); old = c.session_generation
         await c.async_reset_session(); await c._ensure_session()

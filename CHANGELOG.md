@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.34 — 2026-11-26
+
+- Default to read-only minimal heating monitoring for both new and existing entries.
+- Resolve addresses from registered listeners before the first read and export diagnostics from cache.
+- Log read and subscription selections, transport errors, generations, timeouts and reconnect delays at debug level.
+
 ## 0.1.33 — 2026-11-25
 
 - Report unconfirmed session and subscription creation or cleanup, subscription retries and recovery in the standard HA log. Successful lifecycle requests are logged at debug level. Routine long-poll timeouts remain quiet.

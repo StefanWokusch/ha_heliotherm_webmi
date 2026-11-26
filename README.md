@@ -33,7 +33,7 @@ stay read-only.
   using recovered WebMI UI labels where available
 - Native controller heating/buffer and mixer-flow targets; no estimated target entities
 - Calculated total SCOP matching the WebMI efficiency page
-- Home Assistant diagnostics download with an on-demand full WebMI snapshot
+- Home Assistant diagnostics download from the coordinator cache
 - Write controls for a small user-facing set:
   - Operating mode (`Betriebsart setzen`)
   - Heating room target (`Raum Soll Heizung`, SP369) and mixer 1 room target (`Raum Soll`, SP3200)
@@ -57,6 +57,15 @@ Enter your controller's local IP address or hostname. Use the address assigned
 to your own controller; there is no predefined address.
 
 ## Data updates
+
+Minimal heating monitoring is enabled by default, including after an upgrade.
+It exposes at most 13 read-only points: pump command and flow, compressor speed
+request (also used by the controller display), delayed outdoor temperature,
+heat pump flow and return, buffer and mixer temperatures and targets, demand,
+compressor phase and timer. Each point can also be disabled in HA. The first
+read waits for enabled entities to register. An empty selection makes no requests.
+Turn off minimal monitoring in the integration options to use the full catalogue
+and the existing write-controls option.
 
 The integration uses WebMI live updates by default. It creates a read-only
 WebMI session, subscribes only the addresses required by enabled Home Assistant
@@ -98,9 +107,10 @@ diagnostic. Useful but currently non-dashboard values, including domestic hot wa
 temperature/energy and user-facing generated setpoints, are kept as normal
 sensors but disabled by default.
 
-The Home Assistant diagnostics download performs a separate on-demand crawl of
-the visible WebMI SVG pages and reads all discovered addresses. This is intended
-for investigation snapshots, not normal polling.
+The diagnostics download uses only the last received values and reports the
+client session generation and most recent refresh status. Debug logging on
+`custom_components.ha_heliotherm_webmi` records the addresses used for reads and
+subscriptions, transport failures, long-poll timeouts, retry delays and recovery.
 
 `EQ Luefter Istwert` uses the live WebMI value `webregler/mp/248/value`. Nearby
 EQA02 `sp/*` values such as `SP3327=40%` are configuration parameters from the

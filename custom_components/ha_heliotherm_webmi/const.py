@@ -18,5 +18,6 @@ MIN_SCAN_INTERVAL = 15
 CONF_ENABLE_WRITES = "enable_writes"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_USE_SUBSCRIPTIONS = "use_subscriptions"
+CONF_MINIMAL_MONITORING = "minimal_monitoring"
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.SELECT, Platform.NUMBER]

@@ -20,7 +20,7 @@ from .api import (
     WebMISessionChanged,
     WebMISessionError,
 )
-from .descriptions import DESCRIPTIONS_BY_KEY
+from .descriptions import DESCRIPTIONS_BY_KEY, MINIMAL_SENSOR_KEYS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
         api: HeliothermWebMIClient,
         update_interval: timedelta,
         use_subscriptions: bool = True,
+        minimal_monitoring: bool = True,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -47,6 +48,7 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
             always_update=False,
         )
         self.api = api
+        self.minimal_monitoring = minimal_monitoring
         self._use_subscriptions = use_subscriptions
         self._subscription_task: asyncio.Task | None = None
 
@@ -54,6 +56,7 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
         """Start the WebMI subscribedata/publish loop."""
         if not self._use_subscriptions or self._subscription_task is not None:
             return
+        _LOGGER.debug("Starting WebMI subscription monitoring (minimal profile: %s)", self.minimal_monitoring)
         self._subscription_task = self.hass.async_create_background_task(
             self._subscription_loop(),
             "heliotherm_webmi_subscription",
@@ -63,6 +66,7 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
         """Stop the WebMI subscribedata/publish loop."""
         if self._subscription_task is None:
             return
+        _LOGGER.debug("Stopping WebMI subscription monitoring")
         self._subscription_task.cancel()
         with suppress(asyncio.CancelledError):
             await self._subscription_task
@@ -70,24 +74,23 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
 
     async def _async_update_data(self) -> dict[str, WebMIReadResult]:
         """Fetch enabled WebMI values."""
-        descriptions = self._active_descriptions()
-        addresses = [
-            description.address
-            for description in descriptions
-            if description.address is not None
-        ]
+        address_to_keys = self._active_address_to_keys()
+        if not address_to_keys:
+            _LOGGER.debug("Skipping WebMI read: no enabled addresses")
+            return {}
+        _LOGGER.debug("WebMI batch read (%d addresses): %s", len(address_to_keys), ", ".join(address_to_keys))
         try:
-            values_by_address = await self.api.read_addresses(addresses)
+            values_by_address = await self.api.read_addresses(address_to_keys)
         except WebMIError as err:
             raise UpdateFailed(f"Could not read WebMI values: {err}") from err
 
         return {
-            description.key: values_by_address.get(
-                description.address,
+            key: values_by_address.get(
+                address,
                 WebMIReadResult(error=-1, errorstring="Address was not returned"),
             )
-            for description in descriptions
-            if description.address is not None
+            for address, keys in address_to_keys.items()
+            for key in keys
         }
 
     async def _subscription_loop(self) -> None:
@@ -102,6 +105,14 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                 addresses = tuple(address_to_keys)
 
                 if not addresses:
+                    if subscription_id is not None:
+                        with suppress(WebMIError):
+                            await self.api.delete_subscription(
+                                subscription_id, expected_generation=subscription_generation,
+                            )
+                        subscription_id = None
+                        subscription_generation = None
+                        subscribed_addresses = ()
                     await asyncio.sleep(SUBSCRIPTION_RETRY_DELAY_SECONDS)
                     continue
 
@@ -117,6 +128,7 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                     subscription_id = None
                     subscription_generation = None
                     try:
+                        _LOGGER.debug("Registering %d WebMI addresses: %s", len(addresses), ", ".join(addresses))
                         subscription_id = await self.api.create_subscription()
                         subscription_generation = self.api.session_generation
                         await self.api.subscribe_addresses(
@@ -124,6 +136,7 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                             expected_generation=subscription_generation,
                         )
                     except WebMISessionChanged:
+                        _LOGGER.debug("WebMI session changed during registration; registering again")
                         subscription_id = None
                         subscription_generation = None
                         subscribed_addresses = ()
@@ -145,7 +158,7 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                         subscription_generation = None
                         subscribed_addresses = ()
                         failures = min(failures + 1, 6)
-                        await asyncio.sleep(min(300, SUBSCRIPTION_RETRY_DELAY_SECONDS * 2 ** (failures - 1)))
+                        await self._wait_before_retry(failures)
                         continue
                     subscribed_addresses = addresses
                     _LOGGER.debug(
@@ -159,8 +172,11 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                         expected_generation=subscription_generation,
                     )
                 except WebMITimeout:
+                    _LOGGER.debug("WebMI publish wait timed out (generation %s); continuing", subscription_generation)
                     continue
                 except WebMISessionChanged:
+                    _LOGGER.debug("WebMI publish generation changed from %s to %s; registering again",
+                                  subscription_generation, self.api.session_generation)
                     # Another read/control already replaced the session. Do not
                     # invalidate that newer session; recreate only the binding.
                     subscription_id = None
@@ -182,7 +198,7 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                     subscription_generation = None
                     subscribed_addresses = ()
                     failures = min(failures + 1, 6)
-                    await asyncio.sleep(min(300, SUBSCRIPTION_RETRY_DELAY_SECONDS * 2 ** (failures - 1)))
+                    await self._wait_before_retry(failures)
                     continue
 
                 if failures:
@@ -200,6 +216,11 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
                     await self.api.delete_subscription(
                         subscription_id, expected_generation=subscription_generation,
                     )
+
+    async def _wait_before_retry(self, failures: int) -> None:
+        delay = min(300, SUBSCRIPTION_RETRY_DELAY_SECONDS * 2 ** (failures - 1))
+        _LOGGER.debug("WebMI subscription retry in %ds (generation %d)", delay, self.api.session_generation)
+        await asyncio.sleep(delay)
 
     def _apply_subscription_events(
         self,
@@ -229,20 +250,14 @@ class HeliothermWebMICoordinator(DataUpdateCoordinator[dict[str, WebMIReadResult
         return address_to_keys
 
     def _active_descriptions(self) -> Iterable:
-        contexts = set(self.async_contexts())
-        if contexts:
-            active_keys = {key for key in contexts if key in DESCRIPTIONS_BY_KEY}
-        else:
-            active_keys = {
-                description.key
-                for description in DESCRIPTIONS_BY_KEY.values()
-                if description.entity_registry_enabled_default
-            }
-
         read_keys: set[str] = set()
-        pending = list(active_keys)
+        pending = list(self.async_contexts())
+        visited: set[str] = set()
         while pending:
             key = pending.pop()
+            if key in visited or (self.minimal_monitoring and key not in MINIMAL_SENSOR_KEYS):
+                continue
+            visited.add(key)
             description = DESCRIPTIONS_BY_KEY.get(key)
             if description is None:
                 continue

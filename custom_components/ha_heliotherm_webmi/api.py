@@ -249,6 +249,7 @@ class HeliothermWebMIClient:
         ]
         if errors:
             address, item = errors[0]
+            _LOGGER.debug("WebMI registration rejected address %s (code %s)", address, item.get("error"))
             raise WebMIError(
                 "WebMI subscribedata failed for "
                 f"{address}: {item.get('error')} {item.get('errorstring')}"
@@ -548,7 +549,7 @@ class HeliothermWebMIClient:
         except (WebMIError, asyncio.CancelledError) as err:
             _LOGGER.warning("WebMI %s not confirmed (%s); controller state unverified", command, reason or type(err).__name__)
             raise
-        _LOGGER.debug("WebMI %s returned successfully", command)
+        _LOGGER.debug("WebMI %s returned successfully (client generation %d)", command, self.session_generation)
         return response
 
     def _x_webmi_header(self) -> dict[str, str]:
@@ -579,6 +580,9 @@ class HeliothermWebMIClient:
         timeout: ClientTimeout | None = None,
     ) -> dict[str, Any]:
         url = f"{self._base_url}/webMI/?{command}"
+        loop = asyncio.get_running_loop()
+        started = loop.time()
+        generation = self.session_generation
         try:
             async with self._session.post(
                 url,
@@ -587,11 +591,21 @@ class HeliothermWebMIClient:
                 timeout=timeout or self._timeout,
             ) as response:
                 response.raise_for_status()
-                return await response.json(content_type=None)
+                payload = await response.json(content_type=None)
+                # A busy controller can deliver several publishes per second.
+                if command != "publish":
+                    _LOGGER.debug("WebMI %s HTTP %d in %.2fs (generation %d)",
+                                  command, response.status, loop.time() - started, generation)
+                return payload
         except TimeoutError as err:
+            _LOGGER.debug("WebMI %s timed out after %.2fs (generation %d)",
+                          command, loop.time() - started, generation)
             raise WebMITimeout(f"WebMI POST {command} timed out") from err
         except (ClientError, json.JSONDecodeError) as err:
-            raise WebMIError(f"WebMI POST {command} failed: {err}") from err
+            _LOGGER.debug("WebMI %s failed after %.2fs (generation %d, %s, HTTP status %s)",
+                          command, loop.time() - started, generation,
+                          type(err).__name__, getattr(err, "status", None))
+            raise WebMIError(f"WebMI POST {command} failed ({type(err).__name__})") from err
 
     async def _get_text(self, path: str) -> str:
         url = f"{self._base_url}{path}"

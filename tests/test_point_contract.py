@@ -6,6 +6,8 @@ from types import MappingProxyType, SimpleNamespace
 from typing import Any
 from collections.abc import Callable, Mapping
 import sys, types, unittest
+from unittest.mock import AsyncMock
+from test_session_and_write_audit import coord, CoordinatorStub, NoNetwork
 from test_session_and_write_audit import load, EntityStub
 
 SRC=Path(__file__).resolve().parents[1]/'custom_components/ha_heliotherm_webmi'
@@ -76,5 +78,106 @@ class PointContract(unittest.TestCase):
         self.assertEqual(POINTS['diag_sp_3359'].native_unit_of_measurement,'%')
         self.assertEqual(POINTS['diag_sp_3369'].native_unit_of_measurement,'K')
         self.assertEqual(len(D['ALL_DESCRIPTIONS']),len(POINTS))
+
+class MonitoringTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.allowed = D['MINIMAL_SENSOR_KEYS']
+        self.client = SimpleNamespace(read_addresses=AsyncMock(return_value={}))
+        module = load('coordinator.py', {
+            **coord, 'DataUpdateCoordinator': CoordinatorStub,
+            'DESCRIPTIONS_BY_KEY': POINTS, 'MINIMAL_SENSOR_KEYS': self.allowed,
+        })
+        self.coordinator = module['HeliothermWebMICoordinator'](None, self.client, None)
+
+    async def test_empty_and_mixed_registered_contexts(self):
+        coordinator = self.coordinator
+        for minimal in (True, False):
+            coordinator.minimal_monitoring = minimal
+            coordinator.async_contexts = lambda: iter(())
+            self.assertEqual(await coordinator._async_update_data(), {})
+            self.client.read_addresses.assert_not_awaited()
+        coordinator.minimal_monitoring = True
+        coordinator.async_contexts = lambda: iter(['hkpa01_istwert', 'hochdruck', 'scop_gesamt_berechnet'])
+        self.assertEqual(set(await coordinator._async_update_data()), {'hkpa01_istwert'})
+        self.assertEqual(set(self.client.read_addresses.await_args.args[0]), {'webregler/mp/247/value'})
+        self.assertEqual(set(coordinator._active_address_to_keys()), {'webregler/mp/247/value'})
+
+    async def test_legacy_entry_with_every_context_only_selects_direct_minimal_points(self):
+        self.coordinator.async_contexts = lambda: iter(POINTS)
+        self.assertEqual(set(await self.coordinator._async_update_data()), self.allowed)
+        addresses = self.coordinator._active_address_to_keys()
+        self.assertEqual(len(addresses), 13)
+        self.assertIn('webregler/sp/311/value', addresses)
+        self.assertTrue(all(POINTS[key] in D['SENSOR_DESCRIPTIONS'] for key in self.allowed))
+
+    async def test_expanded_profile_fetches_only_selected_dependencies(self):
+        self.coordinator.minimal_monitoring = False
+        self.coordinator.async_contexts = lambda: iter(['scop_gesamt_berechnet'])
+        self.assertEqual(set(await self.coordinator._async_update_data()),
+                         {'thermische_energie_gesamt', 'elektrische_energie_gesamt'})
+
+    async def test_diagnostics_uses_cached_data_without_network(self):
+        diagnostics = load('diagnostics.py', {
+            'DOMAIN': 'test', 'CONF_HOST': 'host', 'CONF_PORT': 'port',
+            'DESCRIPTIONS_BY_KEY': POINTS,
+        })
+        class Offline(NoNetwork):
+            session_generation = 2
+            base_url = 'offline.invalid'
+        self.coordinator.data = {'heizen_soll': coord['WebMIReadResult'](value=40, error=0)}
+        self.coordinator.last_update_success = True
+        runtime = SimpleNamespace(api=Offline(), coordinator=self.coordinator)
+        entry = SimpleNamespace(entry_id='a', title='Offline', data={}, options={})
+        result = await diagnostics['async_get_config_entry_diagnostics'](
+            SimpleNamespace(data={'test': {'a': runtime}}), entry)
+        self.assertEqual(result['address_count'], 1)
+        self.assertEqual(result['addresses']['webregler/mp/257/value']['value'], 40)
+
+    async def test_first_refresh_after_registration_and_failed_setup_cleanup(self):
+        from test_session_and_write_audit import Client, Error
+        calls = []
+        class FakeCoordinator:
+            def __init__(self, *args, **kwargs):
+                self.minimal = kwargs['minimal_monitoring']
+            async def async_config_entry_first_refresh(self):
+                calls.append('read')
+                self_test.assertTrue(self.minimal)
+                if fail:
+                    raise Error('offline')
+            def async_start_subscription(self):
+                calls.append('subscribe')
+        async def register(*args):
+            calls.append('registered')
+        async def unload(*args):
+            calls.append('unloaded')
+        self_test = self
+        client = Client(NoNetwork(), 'offline.invalid')
+        client.async_close = AsyncMock()
+        setup = load('__init__.py', {
+            'DOMAIN': 'test', 'CONF_HOST': 'host', 'CONF_PORT': 'port',
+            'CONF_SCAN_INTERVAL': 'scan', 'DEFAULT_SCAN_INTERVAL': 60,
+            'MIN_SCAN_INTERVAL': 15, 'CONF_MINIMAL_MONITORING': 'minimal_monitoring',
+            'CONF_USE_SUBSCRIPTIONS': 'subscriptions', 'DEFAULT_USE_SUBSCRIPTIONS': True,
+            'DEFAULT_SUBSCRIPTION_FALLBACK_INTERVAL': 300, 'DEFAULT_PORT': 80,
+            'PLATFORMS': ('sensor',), 'HeliothermWebMIClient': lambda *a, **kw: client,
+            'async_get_clientsession': lambda hass: None, 'WebMIError': Error,
+            'HeliothermWebMICoordinator': FakeCoordinator,
+        })['async_setup_entry']
+        entry = SimpleNamespace(entry_id='a', data={'host': 'offline.invalid'}, options={},
+                                async_on_unload=lambda f: None, add_update_listener=lambda f: f)
+        hass = SimpleNamespace(data={}, config_entries=SimpleNamespace(
+            async_entries=lambda domain: [], async_forward_entry_setups=register,
+            async_unload_platforms=unload))
+        for fail in (False, True):
+            calls.clear()
+            if fail:
+                with self.assertRaises(Error):
+                    await setup(hass, entry)
+                self.assertEqual(calls, ['registered', 'read', 'unloaded'])
+                client.async_close.assert_awaited_once()
+                self.assertNotIn('a', hass.data['test'])
+            else:
+                self.assertTrue(await setup(hass, entry))
+                self.assertEqual(calls, ['registered', 'read', 'subscribe'])
 
 if __name__=='__main__':unittest.main()

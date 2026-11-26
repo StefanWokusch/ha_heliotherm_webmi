@@ -25,6 +25,8 @@ class HeliothermWebMIEntity(CoordinatorEntity[HeliothermWebMICoordinator]):
         """Initialize the entity."""
         super().__init__(coordinator, context=description.key)
         self.entity_description = description
+        if coordinator.minimal_monitoring:
+            self._attr_entity_registry_enabled_default = True
         self._attr_unique_id = f"{config_entry.entry_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_entry.entry_id)},

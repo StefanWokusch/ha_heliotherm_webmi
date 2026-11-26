@@ -26,6 +26,7 @@
       "init": {
         "title": "Heliotherm WebMI options",
         "data": {
+          "minimal_monitoring": "Minimal read-only heating monitoring (up to 13 addresses)",
           "scan_interval": "Fallback polling interval in seconds",
           "use_subscriptions": "Use WebMI live updates",
           "enable_writes": "Enable WebMI write controls"

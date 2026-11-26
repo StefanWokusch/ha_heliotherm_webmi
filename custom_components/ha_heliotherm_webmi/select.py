@@ -24,6 +24,8 @@ async def async_setup_entry(
         return
 
     coordinator = hass.data[DOMAIN][entry.entry_id].coordinator
+    if coordinator.minimal_monitoring:
+        return
     async_add_entities(
         HeliothermWebMISelect(coordinator, entry, description)
         for description in SELECT_DESCRIPTIONS

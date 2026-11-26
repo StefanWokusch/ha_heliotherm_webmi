@@ -14,6 +14,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import HeliothermWebMIClient, WebMIError
 from .const import (
+    CONF_MINIMAL_MONITORING,
     CONF_SCAN_INTERVAL,
     CONF_USE_SUBSCRIPTIONS,
     DEFAULT_PORT,
@@ -75,21 +76,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api=api,
         update_interval=timedelta(seconds=update_interval),
         use_subscriptions=use_subscriptions,
+        minimal_monitoring=entry.options.get(CONF_MINIMAL_MONITORING, True),
     )
 
+    platforms_ready = False
     try:
-        await coordinator.async_config_entry_first_refresh()
         hass.data[DOMAIN][entry.entry_id] = HeliothermWebMIRuntimeData(
             api=api,
             coordinator=coordinator,
         )
         entry.async_on_unload(entry.add_update_listener(_async_update_listener))
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        platforms_ready = True
+        # HA now has listeners only for entities actually enabled in the registry.
+        await coordinator.async_config_entry_first_refresh()
         coordinator.async_start_subscription()
     except BaseException:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
-        with suppress(WebMIError):
-            await api.async_close()
+        try:
+            if platforms_ready:
+                await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+        finally:
+            hass.data[DOMAIN].pop(entry.entry_id, None)
+            with suppress(WebMIError):
+                await api.async_close()
         raise
     return True
 

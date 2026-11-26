@@ -15,6 +15,7 @@ import voluptuous as vol
 from .api import HeliothermWebMIClient, WebMIError
 from .const import (
     CONF_ENABLE_WRITES,
+    CONF_MINIMAL_MONITORING,
     CONF_SCAN_INTERVAL,
     CONF_USE_SUBSCRIPTIONS,
     DEFAULT_ENABLE_WRITES,
@@ -110,15 +111,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         config_entry: config_entries.ConfigEntry,
     ) -> config_entries.OptionsFlow:
         """Create the options flow."""
-        return OptionsFlowHandler(config_entry)
+        return OptionsFlowHandler()
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle Heliotherm WebMI options."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self,
@@ -142,6 +139,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             ),
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL)),
+                    vol.Required(
+                        CONF_MINIMAL_MONITORING,
+                        default=self.config_entry.options.get(CONF_MINIMAL_MONITORING, True),
+                    ): cv.boolean,
                     vol.Required(
                         CONF_USE_SUBSCRIPTIONS,
                         default=self.config_entry.options.get(

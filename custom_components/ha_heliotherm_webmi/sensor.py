@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .descriptions import DESCRIPTIONS_BY_KEY, SENSOR_DESCRIPTIONS
+from .descriptions import DESCRIPTIONS_BY_KEY, MINIMAL_SENSOR_KEYS, SENSOR_DESCRIPTIONS
 from .entity import HeliothermWebMIEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ async def async_setup_entry(
     async_add_entities(
         HeliothermWebMISensor(coordinator, entry, description)
         for description in SENSOR_DESCRIPTIONS
+        if not coordinator.minimal_monitoring or description.key in MINIMAL_SENSOR_KEYS
     )
 
 

@@ -1176,3 +1176,11 @@ ALL_DESCRIPTIONS = (
     + NUMBER_DESCRIPTIONS
 )
 DESCRIPTIONS_BY_KEY = {description.key: description for description in ALL_DESCRIPTIONS}
+
+# Direct read-only points used to follow heating and compressor lockouts.
+MINIMAL_SENSOR_KEYS = frozenset({
+    "hkpa01_istwert", "vortex_flow_2", "verdichter_n_soll",
+    "aussentemperatur_verzoegert", "vorlauf_temperatur", "ruecklauf_temperatur",
+    "pufferspeicher_temperatur", "heizen_soll", "mischer1_vorlauf_temperatur",
+    "mischer1_soll", "anforderung", "startseiten_statuscode", "diag_sp_311",
+})
