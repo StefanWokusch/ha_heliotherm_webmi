@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.35 — 2026-11-26
+
+- Read the phase timer on startup, reconnection and phase changes. Check it hourly and once when a countdown is expected to expire. Only the phase is subscribed.
+- The existing timer sensor retains the last observed seconds and exposes the observation time, phase and applicable running start or countdown end as UTC timestamp attributes.
+
 ## 0.1.34 — 2026-11-26
 
 - Default to read-only minimal heating monitoring for both new and existing entries.

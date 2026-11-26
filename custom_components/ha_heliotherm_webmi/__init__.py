@@ -97,6 +97,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
         finally:
             hass.data[DOMAIN].pop(entry.entry_id, None)
+            await coordinator.async_stop_subscription()
             with suppress(WebMIError):
                 await api.async_close()
         raise

@@ -204,9 +204,9 @@ class Tests(unittest.IsolatedAsyncioTestCase):
             async def async_reset_session(self, **kwargs): self.resets += 1
         waits = []
         async def wait(value): waits.append(value)
+        a = Fake(); c = Coord(None, a, None); c._active_address_to_keys = lambda: {'point': ['key']}
         old = coord['asyncio']; coord['asyncio'] = types.SimpleNamespace(sleep=wait, CancelledError=asyncio.CancelledError)
         try:
-            a = Fake(); c = Coord(None, a, None); c._active_address_to_keys = lambda: {'point': ['key']}
             with self.assertRaises(asyncio.CancelledError): await c._subscription_loop()
         finally: coord['asyncio'] = old
         self.assertEqual((a.created, a.deleted, a.resets), (3, 3, 0))

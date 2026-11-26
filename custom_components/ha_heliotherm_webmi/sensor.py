@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
+from .coordinator import TIMER_KEY
 from .descriptions import DESCRIPTIONS_BY_KEY, MINIMAL_SENSOR_KEYS, SENSOR_DESCRIPTIONS
 from .entity import HeliothermWebMIEntity
 
@@ -65,7 +66,9 @@ class HeliothermWebMISensor(HeliothermWebMIEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return extra attributes for calculated sensors."""
+        """Return timer observation or calculated sensor metadata."""
+        if self.entity_description.key == TIMER_KEY:
+            return self.coordinator.timer_attributes
         if self.entity_description.calculate_fn is None:
             return None
         return {

@@ -62,8 +62,14 @@ Minimal heating monitoring is enabled by default, including after an upgrade.
 It exposes at most 13 read-only points: pump command and flow, compressor speed
 request (also used by the controller display), delayed outdoor temperature,
 heat pump flow and return, buffer and mixer temperatures and targets, demand,
-compressor phase and timer. Each point can also be disabled in HA. The first
-read waits for enabled entities to register. An empty selection makes no requests.
+compressor phase and timer. Each point can also be disabled in HA. Every
+timer observation includes the phase (SP310). The timer (SP311) keeps its last
+measured seconds and is excluded from subscriptions. It is read at startup,
+after reconnection, on phase changes, hourly and once at the expected end of a
+countdown. Use its `sampled_at`, `phase`, `running_since` (phase 9) and
+`timer_ends_at` (positive countdown in phase 0 or 10) attributes for local
+clock displays. An elapsed deadline still requires confirmation from the regulator.
+The first read waits for enabled entities to register. An empty selection makes no requests.
 Turn off minimal monitoring in the integration options to use the full catalogue
 and the existing write-controls option.
 

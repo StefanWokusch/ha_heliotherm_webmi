@@ -1,5 +1,7 @@
 """Network-free contract tests for the curated monitoring entities."""
 import ast
+import asyncio
+from datetime import datetime
 from dataclasses import dataclass, make_dataclass
 from pathlib import Path
 from types import MappingProxyType, SimpleNamespace
@@ -82,12 +84,102 @@ class PointContract(unittest.TestCase):
 class MonitoringTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.allowed = D['MINIMAL_SENSOR_KEYS']
-        self.client = SimpleNamespace(read_addresses=AsyncMock(return_value={}))
+        self.client = SimpleNamespace(session_generation=1, read_addresses=AsyncMock(return_value={}))
         module = load('coordinator.py', {
             **coord, 'DataUpdateCoordinator': CoordinatorStub,
             'DESCRIPTIONS_BY_KEY': POINTS, 'MINIMAL_SENSOR_KEYS': self.allowed,
         })
         self.coordinator = module['HeliothermWebMICoordinator'](None, self.client, None)
+        self.coordinator.last_update_success = True
+
+    def timer_fixture(self, phase, seconds):
+        c = self.coordinator
+        c.async_contexts = lambda: iter(['diag_sp_311'])
+        state = {coord['PHASE_ADDRESS']: phase, coord['TIMER_ADDRESS']: seconds}
+        async def read(addresses):
+            return {a: coord['WebMIReadResult'](value=state[a], error=0) for a in addresses}
+        self.client.read_addresses.side_effect = read
+        return state
+
+    async def test_poll_timer_only_on_start_phase_or_session_change(self):
+        c = self.coordinator
+        state = self.timer_fixture(9, 4000)
+        phase, timer = coord['PHASE_ADDRESS'], coord['TIMER_ADDRESS']
+        c.data = await c._async_update_data()
+        attrs = c.timer_attributes
+        self.assertEqual((datetime.fromisoformat(attrs['sampled_at']) -
+                          datetime.fromisoformat(attrs['running_since'])).total_seconds(), 4000)
+        c.data = await c._async_update_data()
+        self.assertEqual(self.client.read_addresses.await_args.args[0], [phase])
+        self.assertEqual(c.data['diag_sp_311'].value, 4000)
+        state[phase], state[timer] = 0, 900
+        c.data = await c._async_update_data()
+        self.assertEqual(self.client.read_addresses.await_args.args[0], [phase, timer])
+        attrs = c.timer_attributes
+        self.assertEqual((datetime.fromisoformat(attrs['timer_ends_at']) -
+                          datetime.fromisoformat(attrs['sampled_at'])).total_seconds(), 900)
+        self.client.session_generation += 1
+        c.data = await c._async_update_data()
+        self.assertEqual(self.client.read_addresses.await_args.args[0], [phase, timer])
+
+    async def test_subscription_phase_transition_and_rebind_without_timer_subscription(self):
+        c = self.coordinator
+        state = self.timer_fixture(9, 300)
+        phase, timer = coord['PHASE_ADDRESS'], coord['TIMER_ADDRESS']
+        c.data = await c._async_update_data()
+        self.client.create_subscription = AsyncMock(return_value='sub')
+        self.client.subscribe_addresses = AsyncMock()
+        self.client.delete_subscription = AsyncMock()
+        count = 0
+        async def publish(**kwargs):
+            nonlocal count
+            count += 1
+            if count == 1:
+                state[phase], state[timer] = 0, 120
+                return [coord['WebMISubscriptionEvent'](phase, coord['WebMIReadResult'](value=0, error=0))]
+            if count == 2:
+                self.assertEqual(c.data['diag_sp_311'].value, 120)
+                state[timer] = 100
+                self.client.session_generation += 1
+                raise coord['WebMISessionChanged']()
+            raise asyncio.CancelledError()
+        self.client.publish_subscription = publish
+        with self.assertRaises(asyncio.CancelledError):
+            await c._subscription_loop()
+        for call in self.client.subscribe_addresses.await_args_list:
+            self.assertEqual(call.args[1], (phase,))
+        self.assertEqual(self.client.read_addresses.await_count, 3)
+        self.assertEqual(c.data['diag_sp_311'].value, 100)
+
+    async def test_one_expiry_check_and_hourly_resample_during_continuous_push(self):
+        c = self.coordinator
+        self.timer_fixture(0, 20)
+        c.data = await c._async_update_data()
+        loop = asyncio.get_running_loop()
+        self.assertAlmostEqual(c._timer_due - loop.time(), 20, delta=1)
+        c._schedule_timer(0)
+        c._timer_task = asyncio.create_task(c._timer_loop())
+        for _ in range(10):
+            await asyncio.sleep(0)
+        self.assertEqual(self.client.read_addresses.await_count, 2)
+        self.assertAlmostEqual(c._timer_due - loop.time(), 3600, delta=1)
+        c._schedule_timer(0)
+        for _ in range(10):
+            await asyncio.sleep(0)
+        self.assertEqual(self.client.read_addresses.await_count, 3)
+        await c.async_stop_subscription()
+        self.assertIsNone(c._timer_task)
+
+    async def test_failed_phase_sample_never_reuses_previous_timer(self):
+        c = self.coordinator
+        self.timer_fixture(0, 90)
+        c.data = await c._async_update_data()
+        self.client.read_addresses.side_effect = coord['WebMIError']('offline')
+        with self.assertLogs(level='WARNING'):
+            await c._push_timer_sample(c._active_address_to_keys())
+        self.assertNotEqual(c.data['diag_sp_311'].error, 0)
+        self.assertFalse(c.timer_attributes)
+        self.assertAlmostEqual(c._timer_due - asyncio.get_running_loop().time(), 60, delta=1)
 
     async def test_empty_and_mixed_registered_contexts(self):
         coordinator = self.coordinator
@@ -146,6 +238,8 @@ class MonitoringTests(unittest.IsolatedAsyncioTestCase):
                     raise Error('offline')
             def async_start_subscription(self):
                 calls.append('subscribe')
+            async def async_stop_subscription(self):
+                calls.append('stop')
         async def register(*args):
             calls.append('registered')
         async def unload(*args):
@@ -173,7 +267,7 @@ class MonitoringTests(unittest.IsolatedAsyncioTestCase):
             if fail:
                 with self.assertRaises(Error):
                     await setup(hass, entry)
-                self.assertEqual(calls, ['registered', 'read', 'unloaded'])
+                self.assertEqual(calls, ['registered', 'read', 'unloaded', 'stop'])
                 client.async_close.assert_awaited_once()
                 self.assertNotIn('a', hass.data['test'])
             else:
