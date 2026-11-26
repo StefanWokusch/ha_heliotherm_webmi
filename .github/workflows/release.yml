@@ -1,0 +1,52 @@
+name: Publish HACS release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - custom_components/ha_heliotherm_webmi/manifest.json
+      - .github/workflows/release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency: hacs-release-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Test integration
+        run: python3 -B -m unittest discover -s tests
+
+      - name: Publish the version from the manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          component=custom_components/ha_heliotherm_webmi
+          version=$(jq -er '.version | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))' "$component/manifest.json")
+          target=$(git log -1 --format=%H -- "$component")
+
+          if gh release view "$version" --json isDraft,isPrerelease --jq '(.isDraft or .isPrerelease) | not' | grep -qx true; then
+            echo "Release $version is already published."
+            exit 0
+          fi
+
+          if git show-ref --verify --quiet "refs/tags/$version"; then
+            test "$(git rev-list -1 "refs/tags/$version")" = "$target"
+          fi
+          notes="$RUNNER_TEMP/release-notes.md"
+          awk -v version="$version" '/^## / { if (found) exit; found=($2==version); next } found { print }' CHANGELOG.md > "$notes"
+          if ! grep -q '[^[:space:]]' "$notes"; then
+            echo "Heliotherm WebMI $version" > "$notes"
+          fi
+          gh release create "$version" --target "$target" --title "$version" --notes-file "$notes"
